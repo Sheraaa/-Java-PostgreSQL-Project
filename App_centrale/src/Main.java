@@ -49,14 +49,19 @@ public class Main {
                     creerGroupePourUnProjet();
                     break;
                 case 6:
+                    afficherCours();
                     break;
                 case 7:
+                    afficherProjets();
                     break;
                 case 8:
+                    afficherCompositionsGroupePourUnProjet();
                     break;
                 case 9:
+                    validerUnGroupe();
                     break;
                 case 10:
+                    validerTousLesGroupesDUnProjet();
                     break;
             }
         } while (choix >= 1 && choix <= 10);
@@ -107,8 +112,7 @@ public class Main {
             ps.executeUpdate();
             System.out.println("--------> Insertion REUSSI !");
         } catch (SQLException se) {
-            System.out.println("Erreur lors de l’insertion !");
-            se.printStackTrace();
+            System.out.println(se.getMessage());
             System.exit(1);
         }
     }
@@ -133,8 +137,7 @@ public class Main {
             ps.executeUpdate();
             System.out.println("--------> Insertion REUSSI !");
         } catch (SQLException se) {
-            System.out.println("Erreur lors de l’insertion !");
-            se.printStackTrace();
+            System.out.println(se.getMessage());
             System.exit(1);
         }
     }
@@ -156,7 +159,6 @@ public class Main {
             System.out.println("--------> Insertion REUSSI !");
         } catch (SQLException se) {
             System.out.println(se.getMessage());
-            se.printStackTrace();
             System.exit(1);
         }
     }
@@ -187,7 +189,6 @@ public class Main {
             System.out.println("--------> Insertion REUSSI !");
         } catch (SQLException se) {
             System.out.println(se.getMessage());
-            se.printStackTrace();
             System.exit(1);
         }
     }
@@ -213,7 +214,117 @@ public class Main {
             System.out.println("--------> Insertion REUSSI !");
         } catch (SQLException se) {
             System.out.println(se.getMessage());
-            se.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    private static void afficherCours() {
+        System.out.println("---------------Afficher les cours-------------------------");
+        Connection conn = connexionDatabase();
+        try {
+            PreparedStatement ps = conn.prepareStatement("SELECT * FROM logiciel.afficher_cours");
+            ResultSet rs = ps.executeQuery();
+            ResultSetMetaData resultSetMetaData = rs.getMetaData();
+            for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+                System.out.print(resultSetMetaData.getColumnName(i) + "          ");
+            }
+            System.out.println();
+            System.out.println("----------------------------------------------------------");
+            while (rs.next()) {
+                System.out.println(rs.getString(1) + "                 \t" + rs.getString(2)
+                        + "             \t" + rs.getString(3));
+            }
+            System.out.println("----------------------------------------------------------");
+
+        } catch (SQLException se) {
+            System.out.println(se.getMessage());
+            System.exit(1);
+        }
+    }
+
+    private static void afficherProjets() {
+        System.out.println("---------Afficher les projets-------------");
+        Connection conn = connexionDatabase();
+        try {
+            PreparedStatement ps = conn.prepareStatement("SELECT * FROM logiciel.afficher_projets");
+            ResultSet rs = ps.executeQuery();
+            ResultSetMetaData resultSetMetaData = rs.getMetaData();
+            for (int i = 1; i < resultSetMetaData.getColumnCount(); i++) {
+                System.out.print(resultSetMetaData.getColumnName(i) + "          ");
+            }
+            System.out.println();
+            while (rs.next()) {
+                System.out.println(rs.getString(1) + "\t" + rs.getString(2) + "\t" + rs.getString(3)
+                        + "\t" + rs.getString(4) + "\t" + rs.getString(5));
+            }
+        } catch (SQLException se) {
+            System.out.println(se.getMessage());
+            System.exit(1);
+        }
+    }
+
+    private static void afficherCompositionsGroupePourUnProjet() {
+        System.out.println("---------Afficher composition de groupe d'un projet-------------");
+        Connection conn = connexionDatabase();
+        try {
+            System.out.print("Entrez l'identifiant de projet: ");
+            String idProjet = scanner.nextLine();
+            idProjet = scanner.nextLine();
+            PreparedStatement ps = conn.prepareStatement("SELECT * FROM logiciel.afficher_composition_groupe");
+            ResultSet rs = ps.executeQuery();
+            ResultSetMetaData resultSetMetaData = rs.getMetaData();
+            for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+                System.out.print(resultSetMetaData.getColumnName(i) + "         ");
+            }
+            System.out.println();
+
+          //  System.out.println(rs.getString(1));
+            //TODO Filtrer l'affichage que pour idProjet
+            //&& rs.getString(1).equals(idProjet)
+            while (rs.next() ) {
+                System.out.println(rs.getInt(1) + "         " + rs.getString(2)
+                        + "         " + rs.getString(3)
+                        + "         " + rs.getBoolean(4) + "         " + rs.getBoolean(5));
+            }
+        } catch (SQLException se) {
+            System.out.println(se.getMessage());
+            System.exit(1);
+        }
+    }
+
+    private static void validerUnGroupe() {
+        System.out.println("---------Valider un groupe d'un projet -------------");
+        Connection conn = connexionDatabase();
+        try {
+            System.out.print("Entrez le numéro du groupe: ");
+            int idGroupe = scanner.nextInt();
+            System.out.print("Entrez l'identifiant du projet: ");
+            String idProjet = scanner.nextLine();
+            idProjet = scanner.nextLine();
+            PreparedStatement ps = conn.prepareStatement("SELECT logiciel.valider_un_groupe(?,?)");
+            ps.setString(1, idProjet);
+            ps.setInt(2, idGroupe);
+            ps.executeQuery();
+
+        } catch (SQLException se) {
+            System.out.println(se.getMessage());
+            System.exit(1);
+        }
+    }
+
+    private static void validerTousLesGroupesDUnProjet() {
+        System.out.println("---------Valider tous les groupes d'un projet -------------");
+        Connection conn = connexionDatabase();
+        try {
+            System.out.print("Entrez l'identifiant du projet: ");
+            String idProjet = scanner.nextLine();
+            idProjet = scanner.nextLine();
+            PreparedStatement ps = conn.prepareStatement("SELECT logiciel.valider_tous_les_groupes(?)");
+            ps.setString(1, idProjet);
+            ps.executeQuery();
+
+        } catch (SQLException se) {
+            System.out.println(se.getMessage());
             System.exit(1);
         }
     }

@@ -1,6 +1,6 @@
 import java.sql.*;
 
-public class test {
+public class Main {
 
     public static void main(String[] args) {
 
@@ -12,11 +12,11 @@ public class test {
         }
 
         String url = "jdbc:postgresql://localhost:5432/logiciel";
-        // String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani“  <-- A MODIFIER
+        // String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzaniâ€œ  <-- A MODIFIER
         Connection conn = null;
 
         try {
-            //conn=DriverManager.getConnection(url,”dbchehrazadouazzani”,”SQINPAG0B”);
+            //conn=DriverManager.getConnection(url,â€dbchehrazadouazzaniâ€,â€SQINPAG0Bâ€);
             conn = DriverManager.getConnection(url, "postgres", "shera");
         } catch (SQLException e) {
             System.out.println("Impossible de joindre le server !");
@@ -26,9 +26,9 @@ public class test {
         try {
             Statement s = conn.createStatement();
             s.executeUpdate("INSERT INTO logiciel.etudiants(nom,prenom,mail) " +
-                    "VALUES ('CO', 'co','co12@student.vinci.be');");
+                    "VALUES ('CO', 'co','co1dd22@student.vinci.be');");
         } catch (SQLException se) {
-            System.out.println("Erreur lors de l’insertion !");
+            System.out.println("Erreur lors de lâ€™insertion !");
             se.printStackTrace();
             System.exit(1);
         }

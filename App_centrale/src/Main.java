@@ -3,6 +3,9 @@ import java.util.Scanner;
 
 public class Main {
     static Scanner scanner = new Scanner(System.in);
+    private final static String user ="postgres";
+    private final static String password ="shera";
+    private static String url = "jdbc:postgresql://localhost:5432/logiciel";
 
     public static void main(String[] args) {
         int choix;
@@ -69,14 +72,13 @@ public class Main {
 
 
     private static Connection connexionDatabase() {
-        String url = "jdbc:postgresql://localhost:5432/logiciel";
         // String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani“  <-- A MODIFIER
         Connection conn = null;
 
 
         try {
             //conn=DriverManager.getConnection(url,”dbchehrazadouazzani”,”SQINPAG0B”);
-            conn = DriverManager.getConnection(url, "postgres", "shera");
+            conn = DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {
             System.out.println("Impossible de joindre le server !");
             System.exit(1);
@@ -122,7 +124,7 @@ public class Main {
         Connection conn = connexionDatabase();
         try {
             PreparedStatement ps = conn.prepareStatement("INSERT INTO " +
-                    "logiciel.etudiants(nom,prenom,mail) VALUES (?,?,?)");
+                    "logiciel.etudiants(nom,prenom,mail,pass_word) VALUES (?,?,?,?)");
             String valeur;
             System.out.print("Entrez le nom de l'étudiant: ");
             valeur = scanner.nextLine();
@@ -134,8 +136,14 @@ public class Main {
             System.out.print("Entrez le mail de l'étudiant: ");
             valeur = scanner.nextLine();
             ps.setString(3, valeur);
+            System.out.print("Entrez le mot de passe de l'étudiant: ");
+            valeur = scanner.nextLine();
+
+            //crypter password
+            String gensel = BCrypt.gensalt();
+            ps.setString(4, BCrypt.hashpw(password, gensel));
             ps.executeUpdate();
-            System.out.println("--------> Insertion REUSSI !");
+            System.out.println("--------> Insertion REUSSI !  <---------");
         } catch (SQLException se) {
             System.out.println(se.getMessage());
             System.exit(1);
@@ -156,7 +164,7 @@ public class Main {
             valeur = scanner.nextLine();
             ps.setString(2, valeur);
             ps.executeQuery();
-            System.out.println("--------> Insertion REUSSI !");
+            System.out.println("--------> Insertion REUSSI !<---------------------");
         } catch (SQLException se) {
             System.out.println(se.getMessage());
             System.exit(1);

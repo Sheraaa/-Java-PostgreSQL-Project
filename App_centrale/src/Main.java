@@ -3,7 +3,7 @@ import java.util.Scanner;
 
 public class Main {
     static Scanner scanner = new Scanner(System.in);
-    private static String url = "jdbc:postgresql://localhost:5432/logiciel";
+    private static String url = "jdbc:postgresql://localhost:5432/postgres";
     //private static String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani";
     private static Connection conn;
     private static PreparedStatement ps1;
@@ -29,7 +29,7 @@ public class Main {
 
         try {
             //conn=DriverManager.getConnection(url,”dbchehrazadouazzani”,”SQINPAG0B”);
-            conn = DriverManager.getConnection(url, "postgres", "shera");
+            conn = DriverManager.getConnection(url, "postgres", "Mariam-16");
         } catch (SQLException e) {
             System.out.println("Impossible de joindre le server !");
             System.exit(1);
@@ -139,7 +139,9 @@ public class Main {
         ps1.setInt(4, nbValeur);
         try {
             ps1.executeUpdate();
+            System.out.println();
             System.out.println("--------> Insertion du cours REUSSI ! <------------");
+            System.out.println();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             System.out.println();
@@ -149,6 +151,7 @@ public class Main {
     }
 
     private static void ajouterUnEtudiant() throws SQLException {
+        System.out.println();
         System.out.println("---------ajouter un etudiant-------------");
 
         String valeur;
@@ -171,7 +174,9 @@ public class Main {
 
         try {
             ps2.executeUpdate();
+            System.out.println();
             System.out.println("--------> Insertion de l'étudiant REUSSI ! <------------");
+            System.out.println();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             System.out.println();
@@ -182,8 +187,9 @@ public class Main {
     }
 
     private static void inscrireEtudiantUnCours() throws SQLException {
+        System.out.println();
         System.out.println("---------Inscrire l'étudiant à un cours-------------");
-
+        System.out.println();
         String valeur;
         System.out.print("Entrez le mail de l'étudiant: ");
         valeur = scanner.nextLine();
@@ -195,7 +201,9 @@ public class Main {
 
         try {
             ps3.executeQuery();
+            System.out.println();
             System.out.println("--------> Inscription de l'étudiant a un cours est REUSSI ! <------------");
+            System.out.println();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             System.out.println();
@@ -206,7 +214,9 @@ public class Main {
     }
 
     private static void creerUnProjetPourUnCours() throws SQLException {
+        System.out.println();
         System.out.println("---------Créer un projet pour un cours-------------");
+        System.out.println();
 
         String valeur;
         System.out.print("Entrez l'identifiant du projet: ");
@@ -228,7 +238,9 @@ public class Main {
 
         try {
             ps4.executeQuery();
+            System.out.println();
             System.out.println("--------> Création du projet REUSSI ! <------------");
+            System.out.println();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             System.out.println();
@@ -239,7 +251,9 @@ public class Main {
     }
 
     private static void creerGroupePourUnProjet() throws SQLException {
+        System.out.println();
         System.out.println("---------Créer des groupes pour un projet-------------");
+        System.out.println();
 
         String valeur;
         int val;
@@ -255,7 +269,9 @@ public class Main {
         ps5.setInt(3, val);
         try {
             ps5.executeQuery();
+            System.out.println();
             System.out.println("--------> Création du groupe est REUSSI ! <------------");
+            System.out.println();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             System.out.println();
@@ -265,7 +281,9 @@ public class Main {
     }
 
     private static void afficherCours() throws SQLException {
+        System.out.println();
         System.out.println("---------------Afficher les cours-------------------------");
+        System.out.println();
 
         ResultSet rs = ps6.executeQuery();
         ResultSetMetaData resultSetMetaData = rs.getMetaData();
@@ -273,17 +291,23 @@ public class Main {
             System.out.print(resultSetMetaData.getColumnName(i) + "          ");
         }
         System.out.println();
+        System.out.println();
         System.out.println("----------------------------------------------------------");
+        System.out.println();
         while (rs.next()) {
             System.out.println(rs.getString(1) + "                 \t" + rs.getString(2)
                     + "             \t" + rs.getString(3));
         }
+        System.out.println();
         System.out.println("----------------------------------------------------------");
+        System.out.println();
 
     }
 
     private static void afficherProjets() throws SQLException {
+        System.out.println();
         System.out.println("---------Afficher les projets-------------");
+        System.out.println();
 
         ResultSet rs = ps7.executeQuery();
         ResultSetMetaData resultSetMetaData = rs.getMetaData();
@@ -300,7 +324,9 @@ public class Main {
     }
 
     private static void afficherCompositionsGroupePourUnProjet() throws SQLException {
+        System.out.println();
         System.out.println("---------Afficher composition de groupe d'un projet-------------");
+        System.out.println();
 
         System.out.print("Entrez l'identifiant de projet: ");
         String identifiantProjet = scanner.nextLine();
@@ -338,7 +364,9 @@ public class Main {
     }
 
     private static void validerUnGroupe() throws SQLException {
+        System.out.println();
         System.out.println("---------Valider un groupe d'un projet -------------");
+        System.out.println();
 
         System.out.print("Entrez le numéro du groupe: ");
         int idGroupe = scanner.nextInt();
@@ -351,7 +379,9 @@ public class Main {
 
         try {
             ps9.executeQuery();
+            System.out.println();
             System.out.println("--------> Validation du groupe REUSSI ! <------------");
+            System.out.println();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             System.out.println();
@@ -362,7 +392,9 @@ public class Main {
     }
 
     private static void validerTousLesGroupesDUnProjet() throws SQLException {
+        System.out.println();
         System.out.println("---------Valider tous les groupes d'un projet -------------");
+        System.out.println();
 
         System.out.print("Entrez l'identifiant du projet: ");
         String idProjet = scanner.nextLine();
@@ -371,7 +403,9 @@ public class Main {
         ps10.setString(1, idProjet);
         try {
             ps10.executeQuery();
+            System.out.println();
             System.out.println("--------> Validation des groupes REUSSI ! <------------");
+            System.out.println();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             System.out.println();

@@ -47,14 +47,14 @@ public class Main {
         ps1 = conn.prepareStatement("INSERT INTO logiciel.cours(code_cours, nom, bloc, nombre_credits) VALUES (?,?,?,?)");
         ps2 = conn.prepareStatement("INSERT INTO logiciel.etudiants(nom,prenom,mail,pass_word) VALUES (?,?,?,?)");
         ps3 = conn.prepareStatement("SELECT logiciel.inscrire_etudiant_cours(?,?)");
-   //     ps4 = conn.prepareStatement("SELECT logiciel.inscrire_etudiant_groupe(?,?,?)");
-        ps5 = conn.prepareStatement("SELECT logiciel.inserer_projets(?,?,?,?,?)");
-        ps6 = conn.prepareStatement("SELECT logiciel.creer_groupes(?,?,?)");
-        ps7 = conn.prepareStatement("SELECT * FROM logiciel.afficher_cours");
-        ps8 = conn.prepareStatement("SELECT * FROM logiciel.afficher_projets");
-        ps9 = conn.prepareStatement("SELECT * FROM logiciel.afficher_composition_groupe");
-        ps10 = conn.prepareStatement("SELECT logiciel.valider_un_groupe(?,?)");
-        ps11 = conn.prepareStatement("SELECT logiciel.valider_tous_les_groupes(?)");
+        ps4 = conn.prepareStatement("SELECT logiciel.inserer_projets(?,?,?,?,?)");
+        ps5 = conn.prepareStatement("SELECT logiciel.creer_groupes(?,?,?)");
+        ps6 = conn.prepareStatement("SELECT * FROM logiciel.afficher_cours");
+        ps7 = conn.prepareStatement("SELECT * FROM logiciel.afficher_projets");
+        ps8 = conn.prepareStatement("SELECT * FROM logiciel.afficher_composition_groupe");
+        ps9 = conn.prepareStatement("SELECT logiciel.valider_un_groupe(?,?)");
+        ps10 = conn.prepareStatement("SELECT logiciel.valider_tous_les_groupes(?)");
+        ps11 = conn.prepareStatement("SELECT logiciel.chercher_id_projet(?)");
     }
 
     public static void main(String[] args) throws SQLException {
@@ -137,9 +137,15 @@ public class Main {
         System.out.print("Entrez le nombre de crédits: ");
         nbValeur = scanner.nextInt();
         ps1.setInt(4, nbValeur);
-        ps1.executeUpdate();
-        System.out.println("--------> Insertion REUSSI !");
-
+        try {
+            ps1.executeUpdate();
+            System.out.println("--------> Insertion du cours REUSSI ! <------------");
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            System.out.println();
+            System.out.println("--------> ECHEC de l'insertion  du cours! <------------");
+            System.out.println();
+        }
     }
 
     private static void ajouterUnEtudiant() throws SQLException {
@@ -162,8 +168,16 @@ public class Main {
         //crypter password
         String gensel = BCrypt.gensalt();
         ps2.setString(4, BCrypt.hashpw(valeur, gensel));
-        ps2.executeUpdate();
-        System.out.println("--------> Insertion REUSSI !  <---------");
+
+        try {
+            ps2.executeUpdate();
+            System.out.println("--------> Insertion de l'étudiant REUSSI ! <------------");
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            System.out.println();
+            System.out.println("--------> ECHEC de l'insertion de l'étudiant ! <------------");
+            System.out.println();
+        }
 
     }
 
@@ -178,8 +192,16 @@ public class Main {
         System.out.print("Entrez le code du cours(BINV****): ");
         valeur = scanner.nextLine();
         ps3.setString(2, valeur);
-        ps3.executeQuery();
-        System.out.println("--------> Insertion REUSSI !<---------------------");
+
+        try {
+            ps3.executeQuery();
+            System.out.println("--------> Inscription de l'étudiant a un cours est REUSSI ! <------------");
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            System.out.println();
+            System.out.println("--------> ECHEC de l'inscription de l'étudiant ! <------------");
+            System.out.println();
+        }
 
     }
 
@@ -190,21 +212,29 @@ public class Main {
         System.out.print("Entrez l'identifiant du projet: ");
         valeur = scanner.nextLine();
         valeur = scanner.nextLine();
-        ps5.setString(1, valeur);
+        ps4.setString(1, valeur);
         System.out.print("Entrez le nom du projet: ");
         valeur = scanner.nextLine();
-        ps5.setString(2, valeur);
+        ps4.setString(2, valeur);
         System.out.print("Entrez la date de début du projet (AAAA-MM-JJ): ");
         valeur = scanner.nextLine();
-        ps5.setDate(3, java.sql.Date.valueOf(valeur));
+        ps4.setDate(3, java.sql.Date.valueOf(valeur));
         System.out.print("Entrez la date de fin du projet (AAAA-MM-JJ): ");
         valeur = scanner.nextLine();
-        ps5.setDate(4, java.sql.Date.valueOf(valeur));
+        ps4.setDate(4, java.sql.Date.valueOf(valeur));
         System.out.print("Entrez le code du cours (BINV****): ");
         valeur = scanner.nextLine();
-        ps5.setString(5, valeur);
-        ps5.executeQuery();
-        System.out.println("--------> Insertion REUSSI !");
+        ps4.setString(5, valeur);
+
+        try {
+            ps4.executeQuery();
+            System.out.println("--------> Création du projet REUSSI ! <------------");
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            System.out.println();
+            System.out.println("--------> ECHEC de la création du projet ! <------------");
+            System.out.println();
+        }
 
     }
 
@@ -216,21 +246,28 @@ public class Main {
         System.out.print("Entrez l'identifiant du projet: ");
         valeur = scanner.nextLine();
         valeur = scanner.nextLine();
-        ps6.setString(1, valeur);
+        ps5.setString(1, valeur);
         System.out.print("Combien de groupe: ");
         val = scanner.nextInt();
-        ps6.setInt(2, val);
+        ps5.setInt(2, val);
         System.out.print("Entrez la taille du groupe: ");
         val = scanner.nextInt();
-        ps6.setInt(3, val);
-        ps6.executeQuery();
-        System.out.println("--------> Insertion REUSSI !");
+        ps5.setInt(3, val);
+        try {
+            ps5.executeQuery();
+            System.out.println("--------> Création du groupe est REUSSI ! <------------");
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            System.out.println();
+            System.out.println("--------> ECHEC de la création du groupe ! <------------");
+            System.out.println();
+        }
     }
 
     private static void afficherCours() throws SQLException {
         System.out.println("---------------Afficher les cours-------------------------");
 
-        ResultSet rs = ps7.executeQuery();
+        ResultSet rs = ps6.executeQuery();
         ResultSetMetaData resultSetMetaData = rs.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             System.out.print(resultSetMetaData.getColumnName(i) + "          ");
@@ -248,7 +285,7 @@ public class Main {
     private static void afficherProjets() throws SQLException {
         System.out.println("---------Afficher les projets-------------");
 
-        ResultSet rs = ps8.executeQuery();
+        ResultSet rs = ps7.executeQuery();
         ResultSetMetaData resultSetMetaData = rs.getMetaData();
 
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
@@ -266,12 +303,12 @@ public class Main {
         System.out.println("---------Afficher composition de groupe d'un projet-------------");
 
         System.out.print("Entrez l'identifiant de projet: ");
-        String idProjet = scanner.nextLine();
-        idProjet = scanner.nextLine();
+        String identifiantProjet = scanner.nextLine();
+        identifiantProjet = scanner.nextLine();
 
-        ResultSet rs = ps9.executeQuery();
+        ResultSet rs = ps8.executeQuery();
         ResultSetMetaData resultSetMetaData = rs.getMetaData();
-        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+        for (int i = 2; i <= resultSetMetaData.getColumnCount(); i++) {
             System.out.print(resultSetMetaData.getColumnName(i) + "         ");
         }
         System.out.println();
@@ -279,10 +316,24 @@ public class Main {
         //  System.out.println(rs.getString(1));
         //TODO Filtrer l'affichage que pour idProjet
         //&& rs.getString(1).equals(idProjet)
+        ps11.setString(1, identifiantProjet);
+        ResultSet rs1;
+        int idProjet = -1;
+        try {
+            rs1 = ps11.executeQuery();
+            rs1.next();
+            idProjet = rs1.getInt(1);
+
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            System.out.println();
+        }
         while (rs.next()) {
-            System.out.println(rs.getInt(1) + "         " + rs.getString(2)
-                    + "         " + rs.getString(3)
-                    + "         " + rs.getBoolean(4) + "         " + rs.getBoolean(5));
+            if (idProjet == rs.getInt(1)) {
+                System.out.println(rs.getInt(2) + "         " + rs.getString(3)
+                        + "         " + rs.getString(4)
+                        + "         " + rs.getBoolean(5) + "         " + rs.getBoolean(6));
+            }
         }
     }
 
@@ -295,9 +346,18 @@ public class Main {
         String idProjet = scanner.nextLine();
         idProjet = scanner.nextLine();
 
-        ps10.setString(1, idProjet);
-        ps10.setInt(2, idGroupe);
-        ps10.executeQuery();
+        ps9.setString(1, idProjet);
+        ps9.setInt(2, idGroupe);
+
+        try {
+            ps9.executeQuery();
+            System.out.println("--------> Validation du groupe REUSSI ! <------------");
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            System.out.println();
+            System.out.println("--------> ECHEC de la validation du groupe ! <------------");
+            System.out.println();
+        }
 
     }
 
@@ -308,8 +368,16 @@ public class Main {
         String idProjet = scanner.nextLine();
         idProjet = scanner.nextLine();
 
-        ps11.setString(1, idProjet);
-        ps11.executeQuery();
+        ps10.setString(1, idProjet);
+        try {
+            ps10.executeQuery();
+            System.out.println("--------> Validation des groupes REUSSI ! <------------");
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            System.out.println();
+            System.out.println("--------> ECHEC de la validation des groupes ! <------------");
+            System.out.println();
+        }
 
     }
 

@@ -56,7 +56,7 @@ CREATE TABLE logiciel.inscriptions_groupes
     etudiant              INTEGER REFERENCES logiciel.etudiants (id_etudiant) NOT NULL,
     groupe                INTEGER REFERENCES logiciel.groupes (id_groupe)     NOT NULL,
     projet                INTEGER REFERENCES logiciel.projets (num_projet)    NOT NULL,
-    UNIQUE (etudiant, groupe)
+    UNIQUE (etudiant, projet)
 );
 
 -------------------------------------------------------------------
@@ -68,9 +68,8 @@ CREATE FUNCTION logiciel.inserer_cours(_code_cours char(8), _nom VARCHAR, _bloc 
     RETURNS VOID AS
 $$
 BEGIN
-    _code_cours = UPPER(_code_cours);
     INSERT INTO logiciel.cours(code_cours, nom, bloc, nombre_credits)
-    VALUES (_code_cours, _nom, _bloc, _nb_credits);
+    VALUES ( UPPER(_code_cours), _nom, _bloc, _nb_credits);
 end;
 $$ LANGUAGE plpgsql;
 
@@ -99,6 +98,7 @@ BEGIN
     FROM logiciel.etudiants e
     WHERE e.mail = _mail
     INTO _etudiant;
+    -- SELECT logiciel.rechercher_id_etudiant (_mail) INTO _etudiant;
 
     IF (_etudiant IS NULL) THEN
         RAISE 'mail inexistant dans la DB';
@@ -243,9 +243,9 @@ BEGIN
                   WHERE p.identifiant_projet = _identifiant_projet
                     AND g.projet = p.num_projet) THEN
         INSERT INTO logiciel.groupes(num_groupe, taille_groupe, projet)
-        VALUES (1, _taille_groupe, _num_projet);
+        VALUES (i, _taille_groupe, _num_projet);
+        i := i + 1;
     END IF;
-
     WHILE i <= _nombre_groupes
         LOOP
             PERFORM logiciel.creer_un_groupe(_identifiant_projet, _taille_groupe);
@@ -500,7 +500,6 @@ CREATE FUNCTION logiciel.valider_tous_les_groupes(_identifiant_projet VARCHAR)
 $$
 DECLARE
     record     RECORD;
-    _nb_groupe INTEGER;
 BEGIN
     FOR record IN SELECT *
                   FROM logiciel.projets p,
@@ -515,7 +514,7 @@ $$ language plpgsql;
 
 
 
-SELECT DISTINCT g.taille_groupe * p.nombre_groupe
+SELECT g.taille_groupe * p.nombre_groupe
 FROM logiciel.groupes g,
      logiciel.projets p
 WHERE g.projet = 3

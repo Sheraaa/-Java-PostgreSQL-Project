@@ -199,22 +199,42 @@ $$ LANGUAGE plpgsql;
 --------------------------------------------------------------------------------------------------------
 --5
 
-CREATE FUNCTION logiciel.creer_groupes(_identifiant_projet VARCHAR, _nombre_groupes INTEGER, _taille_groupe INTEGER)
+CREATE OR REPLACE FUNCTION logiciel.creer_groupes(_identifiant_projet VARCHAR, _nombre_groupes INTEGER,
+                                                  _taille_groupe INTEGER)
     RETURNS VOID AS
 $$
 DECLARE
-    i             INTEGER := 1;
-    numero_projet INTEGER;
+    i            INTEGER := 1;
+    _num_projet  INTEGER;
+    _nb_etudiant INTEGER;
+    _nb_groupe   INTEGER;
 BEGIN
-    SELECT p.num_projet
-    FROM logiciel.projets p
-    WHERE p.identifiant_projet = _identifiant_projet
-    INTO numero_projet;
+    --     SELECT p.num_projet
+--     FROM logiciel.projets p
+--     WHERE p.identifiant_projet = _identifiant_projet
+--     INTO numero_projet;
 
-    IF (numero_projet IS NULL) THEN
+    SELECT logiciel.chercher_id_projet(_identifiant_projet) INTO _num_projet;
+
+    IF (_num_projet IS NULL) THEN
         RAISE 'Projet inexistant !';
     end if;
 
+    SELECT c.nombre_etudiants
+    FROM logiciel.projets p,
+         logiciel.cours c
+    WHERE p.num_projet = _num_projet
+      AND p.cours = c.id_cours
+    INTO _nb_etudiant;
+
+    SELECT p.nombre_groupe
+    FROM logiciel.projets p
+    WHERE p.num_projet = _num_projet
+    INTO _nb_groupe;
+
+    IF ((_nb_etudiant < (_nombre_groupes + _nb_groupe)) OR ((_nombre_groupes * _taille_groupe) > _nb_etudiant)) THEN
+        RAISE 'Impossible de créer plus de groupe que le nombre d étudiant inscrits';
+    end if;
 
     --si aucun groupe alors numero groupe vaut 1
     IF NOT EXISTS(SELECT *
@@ -223,11 +243,10 @@ BEGIN
                   WHERE p.identifiant_projet = _identifiant_projet
                     AND g.projet = p.num_projet) THEN
         INSERT INTO logiciel.groupes(num_groupe, taille_groupe, projet)
-        VALUES (1, _taille_groupe, numero_projet);
+        VALUES (1, _taille_groupe, _num_projet);
     END IF;
-    i := i + 1;
 
-    WHILE i < _nombre_groupes
+    WHILE i <= _nombre_groupes
         LOOP
             PERFORM logiciel.creer_un_groupe(_identifiant_projet, _taille_groupe);
             i := i + 1;
@@ -243,27 +262,37 @@ CREATE FUNCTION logiciel.test_capacite_groupe()
     RETURNS TRIGGER AS
 $$
 DECLARE
-    nb_etudiant      INTEGER;
-    nb_places_groupe INTEGER;
+    _nb_etudiant_cours                 INTEGER;
+    _nb_etudiant_inscrits_actuellement INTEGER;
 BEGIN
     SELECT c.nombre_etudiants
     FROM logiciel.projets p,
          logiciel.cours c
     WHERE p.num_projet = NEW.projet
       AND p.cours = c.id_cours
-    INTO nb_etudiant;
+    INTO _nb_etudiant_cours;
 
-    SELECT g.taille_groupe * p.nombre_groupe
-    FROM logiciel.groupes g,
-         logiciel.projets p
-    WHERE g.projet = NEW.projet
+    SELECT SUM(g.nombre_inscrits)
+    FROM logiciel.projets p,
+         logiciel.groupes g
+    WHERE p.num_projet = NEW.projet
       AND p.num_projet = g.projet
-    LIMIT 1
-    INTO nb_places_groupe;
+    INTO _nb_etudiant_inscrits_actuellement;
 
-    IF (nb_etudiant < nb_places_groupe) THEN
-        RAISE 'Impossible de creer plus de groupe qu il n y a d etudiants ! ';
+    IF (_nb_etudiant_inscrits_actuellement = _nb_etudiant_cours) THEN
+        RAISE 'Impossible de créer plus de groupe car c est complet ';
     end if;
+
+    --     SELECT SUM(g.taille_groupe * p.nombre_groupe)
+--     FROM logiciel.groupes g,
+--          logiciel.projets p
+--     WHERE g.projet = NEW.projet
+--       AND p.num_projet = g.projet
+--     INTO nb_places_groupe;
+
+--     IF (_nb_etudiant < _nb_places_groupe) THEN
+--         RAISE 'Impossible de créer autant de groupe que d étudiant inscrit ! ';
+--     end if;
     RETURN NEW;
 end ;
 $$ LANGUAGE plpgsql;
@@ -285,7 +314,7 @@ CREATE FUNCTION logiciel.creer_un_groupe(_identifiant_projet VARCHAR, _taille_gr
     RETURNS VOID AS
 $$
 DECLARE
-    tulpe RECORD;
+    tuple RECORD;
 BEGIN
     --cherche le dernier tuple
     SELECT *
@@ -295,11 +324,11 @@ BEGIN
       AND g.projet = p.num_projet
     ORDER BY g.num_groupe DESC
     LIMIT 1
-    INTO tulpe;
+    INTO tuple;
 
     --incrémente num_groupe avant d'insérer
     INSERT INTO logiciel.groupes(num_groupe, taille_groupe, projet)
-    VALUES (tulpe.num_groupe + 1, _taille_groupe, tulpe.projet);
+    VALUES (tuple.num_groupe + 1, _taille_groupe, tuple.projet);
 
 end;
 $$ LANGUAGE plpgsql;
@@ -470,7 +499,8 @@ CREATE FUNCTION logiciel.valider_tous_les_groupes(_identifiant_projet VARCHAR)
     RETURNS VOID AS
 $$
 DECLARE
-    record RECORD;
+    record     RECORD;
+    _nb_groupe INTEGER;
 BEGIN
     FOR record IN SELECT *
                   FROM logiciel.projets p,
@@ -482,3 +512,11 @@ BEGIN
         end loop;
 end;
 $$ language plpgsql;
+
+
+
+SELECT DISTINCT g.taille_groupe * p.nombre_groupe
+FROM logiciel.groupes g,
+     logiciel.projets p
+WHERE g.projet = 3
+  AND p.num_projet = g.projet

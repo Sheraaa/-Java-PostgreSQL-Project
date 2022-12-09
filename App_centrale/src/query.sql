@@ -10,7 +10,6 @@ CREATE TABLE logiciel.cours
     nombre_credits   INTEGER           NOT NULL CHECK ( nombre_credits > 0 ),
     nombre_etudiants INTEGER           NOT NULL DEFAULT 0
 );
-
 CREATE TABLE logiciel.projets
 (
     num_projet         SERIAL PRIMARY KEY,
@@ -22,7 +21,6 @@ CREATE TABLE logiciel.projets
     cours              INTEGER REFERENCES logiciel.cours (id_cours) NOT NULL,
     CHECK (date_fin > date_debut)
 );
-
 CREATE TABLE logiciel.etudiants
 (
     id_etudiant SERIAL PRIMARY KEY,
@@ -31,7 +29,6 @@ CREATE TABLE logiciel.etudiants
     mail        VARCHAR NOT NULL UNIQUE CHECK ( mail SIMILAR TO '%_@student.vinci.be'),
     pass_word   VARCHAR NOT NULL CHECK ( pass_word <> '' AND pass_word <> ' ')
 );
-
 CREATE TABLE logiciel.inscriptions_cours
 (
     id_inscription_cours SERIAL PRIMARY KEY,
@@ -39,7 +36,6 @@ CREATE TABLE logiciel.inscriptions_cours
     etudiant             INTEGER REFERENCES logiciel.etudiants (id_etudiant) NOT NULL,
     UNIQUE (cours, etudiant)
 );
-
 CREATE TABLE logiciel.groupes
 (
     id_groupe       SERIAL PRIMARY KEY,
@@ -58,6 +54,7 @@ CREATE TABLE logiciel.inscriptions_groupes
     projet                INTEGER REFERENCES logiciel.projets (num_projet)    NOT NULL,
     UNIQUE (etudiant, projet)
 );
+
 
 
 --------------------------------------------------------------------
@@ -503,8 +500,11 @@ BEGIN
 end;
 $$ language plpgsql;
 
+
 -------------------------------------------------------------------
-----Application etudiant
+-------------------------------------------------------------------
+-----------------------Application etudiant------------------------
+-------------------------------------------------------------------
 -------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION logiciel.chercher_id_etudiant(_mail VARCHAR)
@@ -542,7 +542,7 @@ end;
 $$ LANGUAGE plpgsql;
 
 
---1
+--------------------------------------------------------------------------1
 CREATE OR REPLACE VIEW logiciel.afficher_mes_cours AS
 SELECT ic.etudiant                                                              as "Etudiant",
        c.code_cours                                                             as "Code cours",
@@ -553,7 +553,7 @@ FROM logiciel.cours c
          LEFT OUTER JOIN logiciel.inscriptions_cours ic on c.id_cours = ic.cours
 group by c.nom, c.code_cours, ic.etudiant;
 
---2
+--------------------------------------------------------------------------2
 CREATE OR REPLACE FUNCTION logiciel.inscrire_etudiant_groupe(_etudiant INTEGER, _num_groupe INTEGER, _identifiant_projet VARCHAR)
     RETURNS BOOLEAN AS
 $$
@@ -689,8 +689,11 @@ CREATE TRIGGER trigger_place_disponible_groupe
     FOR EACH ROW
 EXECUTE PROCEDURE logiciel.taille_groupe();
 
------------------------------------------------------------
---3
+--------------------------------------------------------------------------3 - le monstre buggé
+
+
+
+
 
 CREATE OR REPLACE FUNCTION logiciel.retirer_etudiant(_etudiant INTEGER, _identifiant_projet VARCHAR)
     RETURNS BOOLEAN AS
@@ -704,9 +707,13 @@ BEGIN
     FROM logiciel.inscriptions_groupes ig
     WHERE ig.etudiant = _etudiant
       AND ig.projet = _num_projet;
+
     RETURN TRUE;
 end;
 $$ LANGUAGE plpgsql;
+
+
+
 
 
 
@@ -728,6 +735,11 @@ CREATE TRIGGER trigger_dec_nb_etudiant
     on logiciel.inscriptions_groupes
     FOR EACH ROW
 EXECUTE PROCEDURE logiciel.decrementer_nb_etudiants();
+
+
+
+
+
 
 CREATE OR REPLACE FUNCTION logiciel.groupe_deja_valide()
     RETURNS TRIGGER AS
@@ -752,6 +764,11 @@ CREATE TRIGGER trigger_est_groupe_valide
     on logiciel.inscriptions_groupes
     FOR EACH ROW
 EXECUTE PROCEDURE logiciel.groupe_deja_valide();
+
+
+
+
+
 
 CREATE OR REPLACE FUNCTION logiciel.etudiant_est_dans_groupe()
     RETURNS TRIGGER AS
@@ -778,8 +795,11 @@ CREATE TRIGGER trigger_etudiant_est_dans_groupe
 EXECUTE PROCEDURE logiciel.etudiant_est_dans_groupe();
 
 
--------------------------------------------------------------------------
---4 Visualiser tous les projets des cours inscrits
+
+
+
+
+--------------------------------------------------------------------------4 Visualiser tous les projets des cours inscrits
 CREATE OR REPLACE VIEW logiciel.afficher_lesProjets_d_etudiant AS
 SELECT ig.etudiant          as id_etudiant,
        p.identifiant_projet as Identifiant_projet,
@@ -792,8 +812,7 @@ FROM logiciel.projets p
 ORDER BY p.identifiant_projet;
 
 
--------------------------------------------------------------------------
---5 Visualiser tous les projets où il n'a pas de groupe
+--------------------------------------------------------------------------5 Visualiser tous les projets où il n'a pas de groupe
 
 CREATE OR REPLACE VIEW logiciel.afficher_projets_pas_encore_de_groupe AS
 SELECT DISTINCT ic.etudiant          as "id etudiant",
@@ -813,8 +832,7 @@ WHERE NOT EXISTS(SELECT ig.groupe
                  ORDER BY p.cours);
 
 
------------------------------------------------------------------------------
------6 Visualiser toutes les compositions de groupes incomplets d'un projet
+--------------------------------------------------------------------------6 Visualiser toutes les compositions de groupes incomplets d'un projet
 
 CREATE OR REPLACE VIEW logiciel.afficher_composition_groupes_incomplets AS
 SELECT e.id_etudiant,
@@ -835,17 +853,19 @@ WHERE p.num_projet = g.projet
   AND ig.projet = p.num_projet
 group by p.identifiant_projet, g.num_groupe, e.nom, e.prenom, g.taille_groupe, g.nombre_inscrits, e.id_etudiant
 ORDER BY g.num_groupe;
-----------------------------------------
-------------DEMO----------------------------
+
+
+
+
+--------------------------------------------
+------------DEMO---------------------------- à supprimer avant de soumettre
+
 SELECT logiciel.inserer_cours('BINV2040', 'BD2', 2, 6);
 SELECT logiciel.inserer_cours('BINV1020', 'APOO', 1, 6);
-
 INSERT INTO logiciel.etudiants(nom, prenom, mail, pass_word)
 VALUES ('Damas', 'Christophe', 'cd@student.vinci.be', '$2a$10$Z1UzzMyxT.V4sOHuJAyan.X3v.zFB4pqVDy5zsftTZwvSR2rpHqKK');
-
 INSERT INTO logiciel.etudiants(nom, prenom, mail, pass_word)
 VALUES ('Ferneeuw', 'Stephanie', 'sf@student.vinci.be', '$2a$10$Z1UzzMyxT.V4sOHuJAyan.X3v.zFB4pqVDy5zsftTZwvSR2rpHqKK');
-
 SELECT logiciel.inscrire_etudiant_cours('cd@student.vinci.be', 'BINV2040');
 SELECT logiciel.inscrire_etudiant_cours('sf@student.vinci.be', 'BINV2040');
 SELECT logiciel.inserer_projets('projSQL', 'projet SQL', '2023-09-10', '2023-12-15', 'BINV2040');
@@ -853,9 +873,6 @@ SELECT logiciel.inserer_projets('dsd', 'DSD', '2023-09-30', '2023-12-01', 'BINV1
 SELECT logiciel.creer_groupes(1, 1, 2);
 SELECT logiciel.inscrire_etudiant_groupe(1, 1, 'projSQL');
 SELECT logiciel.inscrire_etudiant_groupe(2, 1, 'projSQL');
-
------------------------------------
-----a supprimer-------------------
 SELECT logiciel.inserer_cours('BINV2140', 'SD2', 2, 3);
 INSERT INTO logiciel.etudiants(nom, prenom, mail, pass_word)
 VALUES ('Cambron', 'Isabelle', 'ic@student.vinci.be', '$2a$10$Z1UzzMyxT.V4sOHuJAyan.X3v.zFB4pqVDy5zsftTZwvSR2rpHqKK');
@@ -905,6 +922,7 @@ ALTER FUNCTION logiciel.recuperer_mdp_etudiant(_id_etudiant INTEGER) SECURITY DE
 ALTER FUNCTION logiciel.retirer_etudiant(integer, varchar) SECURITY DEFINER SET search_path = public;
 ALTER FUNCTION logiciel.chercher_id_projet(varchar) SECURITY DEFINER SET search_path = public;
 */
+
 SELECT DISTINCT p.identifiant_projet              as "Identifiant",
                 p.nom                             as "Nom",
                 c.code_cours                      as "Cours",

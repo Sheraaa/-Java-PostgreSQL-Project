@@ -15,8 +15,8 @@ public class AppCentrale {
     private PreparedStatement ps10;
     private PreparedStatement ps11;
     private Connection conn;
-    private final String url = "jdbc:postgresql://localhost:5432/logiciel";
-    //private static String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani";
+  //  private final String url = "jdbc:postgresql://localhost:5432/logiciel";
+    private static String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani";
     private static Scanner scanner = new Scanner(System.in);
 
     /**
@@ -31,14 +31,13 @@ public class AppCentrale {
         }
 
         try {
-            //conn=DriverManager.getConnection(url,”chehrazadouazzani”,”SQINPAG0B”);
-            conn = DriverManager.getConnection(url, "postgres", "shera");
+            conn=DriverManager.getConnection(url,"chehrazadouazzani","SQINPAG0B");
+           // conn = DriverManager.getConnection(url, "postgres", "shera");
         } catch (SQLException e) {
             System.out.println("Impossible de joindre le server !");
             System.exit(1);
         }
         prepareStatements();
-        requeteDemo1();
     }
 
     /**
@@ -355,23 +354,5 @@ public class AppCentrale {
             System.out.println("--------> ECHEC de la validation des groupes ! <------------");
             System.out.println();
         }
-    }
-
-    /**
-     * execute the statements of the demo before creating a student
-     */
-    public void requeteDemo1() {
-        System.out.println("-----------------Scénario de démo-----------------------");
-        try {
-            psDemo = conn.prepareStatement("SELECT logiciel.inserer_cours('BINV2040', 'BD2', 2, 6)");
-            psDemo.executeQuery();
-            psDemo = conn.prepareStatement("SELECT logiciel.inserer_cours('BINV1020', 'APOO', 1, 6)");
-            psDemo.executeQuery();
-            psDemo = conn.prepareStatement("SELECT logiciel.inserer_cours('BINV0000', 'a', 1, 6)");
-            psDemo.executeQuery();
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
-        System.out.println("-------------OK--------------------");
     }
 }

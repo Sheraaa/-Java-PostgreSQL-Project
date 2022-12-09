@@ -15,12 +15,12 @@ public class AppCentrale {
     private PreparedStatement ps10;
     private PreparedStatement ps11;
     private Connection conn;
-    private String url = "jdbc:postgresql://localhost:5432/logiciel";
+    private final String url = "jdbc:postgresql://localhost:5432/logiciel";
     //private static String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani";
     private static Scanner scanner = new Scanner(System.in);
 
     /**
-     * connect to postgresql and prepare statements
+     * connect to postgresql and prepare the statements
      */
     public AppCentrale() {
         try {
@@ -31,7 +31,7 @@ public class AppCentrale {
         }
 
         try {
-            //conn=DriverManager.getConnection(url,”dbchehrazadouazzani”,”SQINPAG0B”);
+            //conn=DriverManager.getConnection(url,”chehrazadouazzani”,”SQINPAG0B”);
             conn = DriverManager.getConnection(url, "postgres", "shera");
         } catch (SQLException e) {
             System.out.println("Impossible de joindre le server !");
@@ -195,6 +195,7 @@ public class AppCentrale {
     /**
      * create groups for a project
      * ps5 = SELECT logiciel.creer_groupes(?,?,?)
+     * ps11 = SELECT logiciel.chercher_id_projet(?)
      */
     public void creerGroupePourUnProjet() {
         System.out.println("---------Créer des groupes pour un projet-------------");
@@ -202,7 +203,9 @@ public class AppCentrale {
         System.out.print("Entrez l'identifiant du projet: ");
         String valeur = scanner.nextLine();
         try {
-            ps5.setString(1, valeur);
+            ps11.setString(1,valeur);
+            ResultSet rs = ps11.executeQuery();
+            ps5.setInt(1, rs.getInt(1));
             System.out.print("Combien de groupe: ");
             int val = Integer.parseInt(scanner.nextLine());
             ps5.setInt(2, val);
@@ -289,12 +292,9 @@ public class AppCentrale {
             ps11.setString(1, identifiantProjet);
             ResultSet rs1 = ps11.executeQuery();
             rs1.next();
+
             int idProjet = rs1.getInt(1);
 
-            if (idProjet == 0) {
-                System.out.println("Projet inexistant");
-                return;
-            }
             while (rs.next()) {
                 if (idProjet == rs.getInt(1)) {
                     System.out.println(rs.getInt(2) + "         " + rs.getString(3)
@@ -336,6 +336,7 @@ public class AppCentrale {
 
     /**
      * validate all the groups of a project
+     * ps10 = SELECT logiciel.valider_tous_les_groupes(?)
      */
     public void validerTousLesGroupesDUnProjet() {
         System.out.println("---------Valider tous les groupes d'un projet -------------");
@@ -371,5 +372,6 @@ public class AppCentrale {
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
+        System.out.println("-------------OK--------------------");
     }
 }

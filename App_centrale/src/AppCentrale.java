@@ -2,7 +2,6 @@ import java.sql.*;
 import java.util.Scanner;
 
 public class AppCentrale {
-    private PreparedStatement psDemo;
     private PreparedStatement ps1;
     private PreparedStatement ps2;
     private PreparedStatement ps3;

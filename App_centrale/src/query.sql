@@ -418,7 +418,8 @@ $$
 BEGIN
     UPDATE logiciel.groupes g
     SET valide = TRUE
-    WHERE g.num_groupe = _numero_groupe AND g.projet = _num_projet;
+    WHERE g.num_groupe = _numero_groupe
+      AND g.projet = _num_projet;
     RETURN TRUE;
 end;
 $$ LANGUAGE plpgsql;
@@ -482,7 +483,7 @@ CREATE FUNCTION logiciel.valider_tous_les_groupes(_identifiant_projet VARCHAR)
     RETURNS VOID AS
 $$
 DECLARE
-    record     RECORD;
+    record      RECORD;
     _num_projet INTEGER;
 BEGIN
     SELECT logiciel.chercher_id_projet(_identifiant_projet) INTO _num_projet;
@@ -588,10 +589,10 @@ CREATE OR REPLACE FUNCTION logiciel.deja_inscrits()
     RETURNS TRIGGER AS
 $$
 BEGIN
-    IF EXISTS (SELECT ig.id_inscription_groupe
-               FROM logiciel.inscriptions_groupes ig
-               WHERE ig.projet = NEW.projet
-                 AND ig.etudiant = NEW.etudiant)THEN
+    IF EXISTS(SELECT ig.id_inscription_groupe
+              FROM logiciel.inscriptions_groupes ig
+              WHERE ig.projet = NEW.projet
+                AND ig.etudiant = NEW.etudiant) THEN
         RAISE 'Vous êtes déjà inscrit dans un groupe pour ce projet !';
     end if;
     RETURN NEW;
@@ -704,6 +705,8 @@ BEGIN
 end;
 $$ LANGUAGE plpgsql;
 
+
+
 --TRIGGER décrémenter nb etudiant
 CREATE OR REPLACE FUNCTION logiciel.decrementer_nb_etudiants()
     RETURNS TRIGGER AS
@@ -723,31 +726,29 @@ CREATE TRIGGER trigger_dec_nb_etudiant
     FOR EACH ROW
 EXECUTE PROCEDURE logiciel.decrementer_nb_etudiants();
 
-CREATE OR REPLACE FUNCTION logiciel.groupe_deja_valide()
-    RETURNS TRIGGER AS
-$$
-DECLARE
-    est_valide BOOLEAN;
-BEGIN
-    SELECT g.valide
-    FROM logiciel.groupes g,
-         logiciel.inscriptions_groupes ig
-    WHERE OLD.id_inscription_groupe = ig.id_inscription_groupe
-      AND ig.groupe = g.id_groupe
-    INTO est_valide;
-
-    IF (est_valide = TRUE) THEN
-        RAISE 'Le groupe est déjà validé, impossible de quitter le groupe';
-    end if;
-    RETURN NEW;
-end;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_est_groupe_valide
-    BEFORE DELETE
-    on logiciel.inscriptions_groupes
-    FOR EACH ROW
-EXECUTE PROCEDURE logiciel.groupe_deja_valide();
+-- CREATE OR REPLACE FUNCTION logiciel.groupe_deja_valide()
+--     RETURNS TRIGGER AS
+-- $$
+-- DECLARE
+--     est_valide BOOLEAN;
+-- BEGIN
+--
+--     IF (SELECT g.valide
+--         FROM logiciel.groupes g,
+--              logiciel.inscriptions_groupes ig
+--         WHERE OLD.id_inscription_groupe = ig.id_inscription_groupe
+--           AND ig.groupe = g.id_groupe) THEN
+--         RAISE 'Le groupe est déjà validé, impossible de quitter le groupe';
+--     end if;
+--     RETURN NEW;
+-- end;
+-- $$ LANGUAGE plpgsql;
+--
+-- CREATE TRIGGER trigger_est_groupe_valide
+--     BEFORE DELETE
+--     on logiciel.inscriptions_groupes
+--     FOR EACH ROW
+-- EXECUTE PROCEDURE logiciel.groupe_deja_valide();
 
 CREATE OR REPLACE FUNCTION logiciel.etudiant_est_dans_groupe()
     RETURNS TRIGGER AS
@@ -838,19 +839,19 @@ SELECT logiciel.inserer_cours('BINV1020', 'APOO', 1, 6);
 SELECT logiciel.inserer_cours('BINV0000', 'a', 1, 6);
 
 INSERT INTO logiciel.etudiants(nom, prenom, mail, pass_word)
-VALUES ('Damas','Christophe','cd@student.vinci.be', '$2a$10$Z1UzzMyxT.V4sOHuJAyan.X3v.zFB4pqVDy5zsftTZwvSR2rpHqKK');
+VALUES ('Damas', 'Christophe', 'cd@student.vinci.be', '$2a$10$Z1UzzMyxT.V4sOHuJAyan.X3v.zFB4pqVDy5zsftTZwvSR2rpHqKK');
 
 INSERT INTO logiciel.etudiants(nom, prenom, mail, pass_word)
-VALUES ('Ferneeuw','Stephanie','sf@student.vinci.be', '$2a$10$Z1UzzMyxT.V4sOHuJAyan.X3v.zFB4pqVDy5zsftTZwvSR2rpHqKK');
+VALUES ('Ferneeuw', 'Stephanie', 'sf@student.vinci.be', '$2a$10$Z1UzzMyxT.V4sOHuJAyan.X3v.zFB4pqVDy5zsftTZwvSR2rpHqKK');
 
 SELECT logiciel.inscrire_etudiant_cours('cd@student.vinci.be', 'BINV2040');
 SELECT logiciel.inscrire_etudiant_cours('sf@student.vinci.be', 'BINV2040');
-SELECT logiciel.inserer_projets('projSQL', 'projet SQL', '2023-09-10','2023-12-15', 'BINV2040');
+SELECT logiciel.inserer_projets('projSQL', 'projet SQL', '2023-09-10', '2023-12-15', 'BINV2040');
 SELECT logiciel.inserer_projets('dsd', 'DSD', '2023-09-30', '2023-12-01', 'BINV1020');
 SELECT logiciel.creer_groupes('projSQL', 1, 2);
 SELECT logiciel.inscrire_etudiant_groupe(1, 1, 'projSQL');
 SELECT logiciel.inscrire_etudiant_groupe(2, 1, 'projSQL');
-SELECT logiciel.inscrire_etudiant_cours('cd@student.vinci.be','BINV0000');
-SELECT logiciel.inscrire_etudiant_cours('sf@student.vinci.be','BINV0000');
-SELECT logiciel.inserer_projets('a','a','2020-01-01','2021-01-01','BINV0000');
+SELECT logiciel.inscrire_etudiant_cours('cd@student.vinci.be', 'BINV0000');
+SELECT logiciel.inscrire_etudiant_cours('sf@student.vinci.be', 'BINV0000');
+SELECT logiciel.inserer_projets('a', 'a', '2020-01-01', '2021-01-01', 'BINV0000');
 SELECT logiciel.creer_groupes('a', 2, 1);

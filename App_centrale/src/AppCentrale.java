@@ -376,6 +376,7 @@ public class AppCentrale {
     /**
      * validate a group
      * ps9 = SELECT logiciel.valider_un_groupe(?,?)
+     * ps11 = SELECT logiciel.chercher_id_projet(?)
      */
     public void validerUnGroupe() {
         System.out.println("---------Valider un groupe d'un projet -------------");
@@ -383,10 +384,16 @@ public class AppCentrale {
         System.out.print("Entrez le numéro du groupe: ");
         int idGroupe = Integer.parseInt(scanner.nextLine());
         System.out.print("Entrez l'identifiant du projet: ");
-        String idProjet = scanner.nextLine();
+        String identifiantProjet = scanner.nextLine();
 
         try {
-            ps9.setString(1, idProjet);
+            ps11.setString(1, identifiantProjet);
+            ResultSet rs1 = ps11.executeQuery();
+            rs1.next();
+
+            int idProjet = rs1.getInt(1);
+
+            ps9.setInt(1, idProjet);
             ps9.setInt(2, idGroupe);
             ps9.executeQuery();
             System.out.println("--------> Validation du groupe REUSSI ! <------------");

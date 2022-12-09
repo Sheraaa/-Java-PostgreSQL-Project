@@ -69,7 +69,7 @@ CREATE FUNCTION logiciel.inserer_cours(_code_cours char(8), _nom VARCHAR, _bloc 
 $$
 BEGIN
     INSERT INTO logiciel.cours(code_cours, nom, bloc, nombre_credits)
-    VALUES ( UPPER(_code_cours), _nom, _bloc, _nb_credits);
+    VALUES (UPPER(_code_cours), _nom, _bloc, _nb_credits);
 end;
 $$ LANGUAGE plpgsql;
 
@@ -93,16 +93,7 @@ DECLARE
     _etudiant INTEGER;
     _id_cours INTEGER;
 BEGIN
-    --recherche etudiant
-    SELECT e.id_etudiant
-    FROM logiciel.etudiants e
-    WHERE e.mail = _mail
-    INTO _etudiant;
-    -- SELECT logiciel.rechercher_id_etudiant (_mail) INTO _etudiant;
-
-    IF (_etudiant IS NULL) THEN
-        RAISE 'mail inexistant dans la DB';
-    end if;
+    SELECT logiciel.chercher_id_etudiant(_mail) INTO _etudiant;
 
     --rechercher code cours si existant alors on prend son id_cours
     SELECT c.id_cours
@@ -114,7 +105,8 @@ BEGIN
         RAISE 'code cours invalide';
     end if;
 
-    INSERT INTO logiciel.inscriptions_cours(cours, etudiant) VALUES (_id_cours, _etudiant);
+    INSERT INTO logiciel.inscriptions_cours(cours, etudiant)
+    VALUES (_id_cours, _etudiant);
 end;
 $$ LANGUAGE plpgsql;
 
@@ -209,16 +201,8 @@ DECLARE
     _nb_etudiant INTEGER;
     _nb_groupe   INTEGER;
 BEGIN
-    --     SELECT p.num_projet
---     FROM logiciel.projets p
---     WHERE p.identifiant_projet = _identifiant_projet
---     INTO numero_projet;
 
     SELECT logiciel.chercher_id_projet(_identifiant_projet) INTO _num_projet;
-
-    IF (_num_projet IS NULL) THEN
-        RAISE 'Projet inexistant !';
-    end if;
 
     SELECT c.nombre_etudiants
     FROM logiciel.projets p,
@@ -236,24 +220,14 @@ BEGIN
         RAISE 'Impossible de créer plus de groupe que le nombre d étudiant inscrits';
     end if;
 
-    --si aucun groupe alors numero groupe vaut 1
-    IF NOT EXISTS(SELECT *
-                  FROM logiciel.groupes g,
-                       logiciel.projets p
-                  WHERE p.identifiant_projet = _identifiant_projet
-                    AND g.projet = p.num_projet) THEN
-        INSERT INTO logiciel.groupes(num_groupe, taille_groupe, projet)
-        VALUES (i, _taille_groupe, _num_projet);
-        i := i + 1;
-    END IF;
     WHILE i <= _nombre_groupes
         LOOP
-            PERFORM logiciel.creer_un_groupe(_identifiant_projet, _taille_groupe);
+            PERFORM logiciel.creer_un_groupe(_num_projet, _taille_groupe);
             i := i + 1;
         end loop;
 
     UPDATE logiciel.projets p
-    SET nombre_groupe = _nombre_groupes + nombre_groupe
+    SET nombre_groupe = _nombre_groupes + nombre_groupe --<<<<<<<<<--------- mettre dans un trigger
     WHERE p.identifiant_projet = _identifiant_projet;
 end;
 $$ LANGUAGE plpgsql;
@@ -310,17 +284,27 @@ EXECUTE PROCEDURE logiciel.test_capacite_groupe();
 -- EXECUTE PROCEDURE logiciel.test_capacite_groupe();
 
 
-CREATE FUNCTION logiciel.creer_un_groupe(_identifiant_projet VARCHAR, _taille_groupe INTEGER)
+CREATE FUNCTION logiciel.creer_un_groupe(_num_projet INTEGER, _taille_groupe INTEGER)
     RETURNS VOID AS
 $$
 DECLARE
     tuple RECORD;
 BEGIN
+    --si aucun groupe alors numero groupe vaut 1
+    IF NOT EXISTS(SELECT *
+                  FROM logiciel.groupes g,
+                       logiciel.projets p
+                  WHERE p.num_projet = _num_projet
+                    AND g.projet = p.num_projet) THEN
+        INSERT INTO logiciel.groupes(num_groupe, taille_groupe, projet)
+        VALUES (1, _taille_groupe, _num_projet);
+    END IF;
+
     --cherche le dernier tuple
-    SELECT *
+    SELECT g.*
     FROM logiciel.groupes g,
          logiciel.projets p
-    WHERE p.identifiant_projet = _identifiant_projet
+    WHERE p.num_projet = _num_projet
       AND g.projet = p.num_projet
     ORDER BY g.num_groupe DESC
     LIMIT 1
@@ -428,14 +412,13 @@ $$ LANGUAGE plpgsql;
 ------------------------------------------------------------------------------------
 --9 Valider un groupe
 
-CREATE FUNCTION logiciel.valider_un_groupe(_identifiant_projet VARCHAR, _numero_groupe INTEGER)
+CREATE FUNCTION logiciel.valider_un_groupe(_num_projet INTEGER, _numero_groupe INTEGER)
     RETURNS BOOLEAN AS
 $$
 BEGIN
-    PERFORM (logiciel.groupe_existe(_identifiant_projet, _numero_groupe));
     UPDATE logiciel.groupes g
     SET valide = TRUE
-    WHERE g.num_groupe = _numero_groupe;
+    WHERE g.num_groupe = _numero_groupe AND g.projet = _num_projet;
     RETURN TRUE;
 end;
 $$ LANGUAGE plpgsql;
@@ -500,14 +483,18 @@ CREATE FUNCTION logiciel.valider_tous_les_groupes(_identifiant_projet VARCHAR)
 $$
 DECLARE
     record     RECORD;
+    _num_projet INTEGER;
 BEGIN
+    SELECT logiciel.chercher_id_projet(_identifiant_projet) INTO _num_projet;
+
     FOR record IN SELECT *
                   FROM logiciel.projets p,
                        logiciel.groupes g
-                  WHERE p.identifiant_projet = _identifiant_projet
+                  WHERE p.num_projet = _num_projet
                     AND p.num_projet = g.projet
+                    AND g.valide = FALSE
         LOOP
-            PERFORM logiciel.valider_un_groupe(record.identifiant_projet, record.num_groupe);
+            PERFORM logiciel.valider_un_groupe(_num_projet, record.num_groupe);
         end loop;
 end;
 $$ language plpgsql;

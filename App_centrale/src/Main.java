@@ -1,10 +1,9 @@
-import java.sql.*;
 import java.util.Scanner;
 
 public class Main {
     static Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args){
         AppCentrale app = new AppCentrale();
         int choix;
 
@@ -61,7 +60,4 @@ public class Main {
             }
         } while (choix >= 1 && choix <= 10);
     }
-
-
-
 }

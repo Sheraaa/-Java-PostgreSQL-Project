@@ -14,7 +14,8 @@ public class AppCentrale {
     private PreparedStatement ps10;
     private PreparedStatement ps11;
     private Connection conn;
-    private final String url = "jdbc:postgresql://localhost:5432/postgres";
+    private final String url = "jdbc:postgresql://localhost:5432/logiciel"; // <---- LOGIN SHERA
+   // private final String url = "jdbc:postgresql://localhost:5432/postgres";  <---- LOGIN MARIAM
     //private static String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani";
     private static Scanner scanner = new Scanner(System.in);
 
@@ -30,13 +31,70 @@ public class AppCentrale {
         }
 
         try {
-           //conn=DriverManager.getConnection(url,"chehrazadouazzani","SQINPAG0B");
-           conn = DriverManager.getConnection(url, "postgres", "Mariam-16");
+            //conn=DriverManager.getConnection(url,"chehrazadouazzani","SQINPAG0B");
+            conn = DriverManager.getConnection(url, "postgres", "shera");
         } catch (SQLException e) {
             System.out.println("Impossible de joindre le server !");
             System.exit(1);
         }
         prepareStatements();
+    }
+
+    public void menu() {
+        int choix;
+
+        System.out.println("-------------------------------------------------------");
+        System.out.println("--------------MENU APPLICATION CENTRALE----------------");
+        System.out.println("-------------------------------------------------------");
+
+        do {
+            System.out.println("1- Ajouter un cours");
+            System.out.println("2- Ajouter un étudiant");
+            System.out.println("3- Inscrire un étudiant à un cours");
+            System.out.println("4- Créer un projet pour un cours");
+            System.out.println("5- Créer des groupes pour un projet");
+            System.out.println("6- Visualiser les cours");
+            System.out.println("7- Visualiser tous les projets");
+            System.out.println("8- Visualiser toutes les compositions de groupe d'un projet");
+            System.out.println("9- Valider un groupe");
+            System.out.println("10- Valider tous les groupes d'un projet");
+            System.out.println();
+            System.out.print("Entrez votre choix: ");
+            choix = Integer.parseInt(scanner.nextLine());
+
+            switch (choix) {
+                case 1:
+                    ajouterUnCours();
+                    break;
+                case 2:
+                    ajouterUnEtudiant();
+                    break;
+                case 3:
+                    inscrireEtudiantUnCours();
+                    break;
+                case 4:
+                    creerUnProjetPourUnCours();
+                    break;
+                case 5:
+                    creerGroupePourUnProjet();
+                    break;
+                case 6:
+                    afficherCours();
+                    break;
+                case 7:
+                    afficherProjets();
+                    break;
+                case 8:
+                    afficherCompositionsGroupePourUnProjet();
+                    break;
+                case 9:
+                    validerUnGroupe();
+                    break;
+                case 10:
+                    validerTousLesGroupesDUnProjet();
+                    break;
+            }
+        } while (choix >= 1 && choix <= 10);
     }
 
     /**
@@ -201,7 +259,7 @@ public class AppCentrale {
         System.out.print("Entrez l'identifiant du projet: ");
         String valeur = scanner.nextLine();
         try {
-            ps11.setString(1,valeur);
+            ps11.setString(1, valeur);
             ResultSet rs = ps11.executeQuery();
             rs.next();
             ps5.setInt(1, rs.getInt(1));

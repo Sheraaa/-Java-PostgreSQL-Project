@@ -100,7 +100,7 @@ BEGIN
     --rechercher code cours si existant alors on prend son id_cours
     SELECT c.id_cours
     FROM logiciel.cours c
-    WHERE c.code_cours = _code_cours
+    WHERE c.code_cours = UPPER(_code_cours)
     INTO _id_cours;
 
     IF (_id_cours IS NULL) THEN
@@ -179,7 +179,7 @@ DECLARE
 BEGIN
     SELECT c.id_cours
     FROM logiciel.cours c
-    WHERE c.code_cours = _code_cours
+    WHERE c.code_cours = UPPER(_code_cours)
     INTO _cours;
 
     IF (_cours IS NULL) THEN
@@ -195,17 +195,16 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION logiciel.creer_groupes(_num_projet INTEGER, _nombre_groupes INTEGER,
                                                   _taille_groupe INTEGER)
-    RETURNS VOID AS
+    RETURNS BOOLEAN AS
 $$
 DECLARE
     i            INTEGER := 1;
     _nb_etudiant INTEGER;
     _nb_groupe   INTEGER;
 BEGIN
-    IF(_nombre_groupes = 0 or _taille_groupe = 0) THEN
+    IF (_nombre_groupes = 0 OR _taille_groupe = 0) THEN
         RAISE 'Veuillez entrer des nombres strictement positifs';
     END IF;
-
 
     SELECT c.nombre_etudiants
     FROM logiciel.projets p,
@@ -223,6 +222,17 @@ BEGIN
         RAISE 'Impossible de créer plus de groupe que le nombre d étudiant inscrits';
     end if;
 
+    --si aucun groupe alors numero groupe vaut 1
+    IF NOT EXISTS(SELECT *
+                  FROM logiciel.groupes g,
+                       logiciel.projets p
+                  WHERE p.num_projet = _num_projet
+                    AND g.projet = p.num_projet) THEN
+        INSERT INTO logiciel.groupes(num_groupe, taille_groupe, projet)
+        VALUES (1, _taille_groupe, _num_projet);
+        i := i + 1;
+    END IF;
+
     WHILE i <= _nombre_groupes
         LOOP
             PERFORM logiciel.creer_un_groupe(_num_projet, _taille_groupe);
@@ -232,6 +242,7 @@ BEGIN
     UPDATE logiciel.projets p
     SET nombre_groupe = _nombre_groupes + nombre_groupe --<<<<<<<<<--------- mettre dans un trigger
     WHERE p.num_projet = _num_projet;
+    RETURN TRUE;
 end;
 $$ LANGUAGE plpgsql;
 
@@ -249,7 +260,7 @@ BEGIN
       AND p.cours = c.id_cours
     INTO _nb_etudiant_cours;
 
-    SELECT SUM(g.nombre_inscrits)
+    SELECT g.nombre_inscrits
     FROM logiciel.projets p,
          logiciel.groupes g
     WHERE p.num_projet = NEW.projet
@@ -293,16 +304,6 @@ $$
 DECLARE
     tuple RECORD;
 BEGIN
-    --si aucun groupe alors numero groupe vaut 1
-    IF NOT EXISTS(SELECT *
-                  FROM logiciel.groupes g,
-                       logiciel.projets p
-                  WHERE p.num_projet = _num_projet
-                    AND g.projet = p.num_projet) THEN
-        INSERT INTO logiciel.groupes(num_groupe, taille_groupe, projet)
-        VALUES (1, _taille_groupe, _num_projet);
-    END IF;
-
     --cherche le dernier tuple
     SELECT g.*
     FROM logiciel.groupes g,
@@ -427,8 +428,8 @@ BEGIN
 end;
 $$ LANGUAGE plpgsql;
 
-CREATE FUNCTION logiciel.groupe_existe(_identifiant_projet VARCHAR, _numero_groupe INTEGER)
-    RETURNS VOID AS
+CREATE FUNCTION logiciel.chercher_id_groupe(_identifiant_projet VARCHAR, _numero_groupe INTEGER)
+    RETURNS INTEGER AS
 $$
 DECLARE
     _id_groupe INTEGER;
@@ -444,6 +445,7 @@ BEGIN
     IF (_id_groupe IS NULL) THEN
         RAISE 'Groupe inexistant';
     end if;
+    RETURN _id_groupe;
 
 end;
 $$ LANGUAGE plpgsql;
@@ -561,26 +563,8 @@ DECLARE
     _num_projet INTEGER;
     _id_groupe  INTEGER;
 BEGIN
-    -- SELECT logiciel.chercher_id_projet(_identifiant_projet) INTO _num_projet;
-    -- SELECT logiciel.groupe_existe(_identifiant_projet, _num_groupe) INTO _id_groupe;
-    SELECT p.num_projet
-    FROM logiciel.projets p
-    WHERE p.identifiant_projet = _identifiant_projet
-    INTO _num_projet;
-
-    IF (_num_projet IS NULL) THEN
-        RAISE 'identifiant projet inexistant !';
-    end if;
-
-    SELECT g.id_groupe
-    FROM logiciel.groupes g
-    WHERE g.num_groupe = _num_groupe
-      AND g.projet = _num_projet
-    INTO _id_groupe;
-
-    IF (_id_groupe IS NULL) THEN
-        RAISE 'Numéro de groupe inexistant';
-    end if;
+    SELECT logiciel.chercher_id_projet(_identifiant_projet) INTO _num_projet;
+    SELECT logiciel.chercher_id_groupe(_identifiant_projet, _num_groupe) INTO _id_groupe;
 
     INSERT INTO logiciel.inscriptions_groupes(etudiant, groupe, projet)
     VALUES (_etudiant, _id_groupe, _num_projet);
@@ -733,8 +717,18 @@ CREATE OR REPLACE FUNCTION logiciel.groupe_deja_valide()
     RETURNS TRIGGER AS
 $$
 DECLARE
-    est_valide BOOLEAN;
+    est_valide   BOOLEAN;
+    _id_etudiant INTEGER;
+
 BEGIN
+    SELECT ig.etudiant
+    FROM logiciel.inscriptions_groupes ig
+    WHERE ig.id_inscription_groupe = OLD.id_inscription_groupe
+    INTO _id_etudiant;
+
+    IF (_id_etudiant IS NULL) THEN
+        RAISE 'Vous n êtes pas inscrit dans ce groupe de ce projet';
+    end if;
 
     IF (SELECT g.valide
         FROM logiciel.groupes g,
@@ -752,31 +746,6 @@ CREATE TRIGGER trigger_est_groupe_valide
     on logiciel.inscriptions_groupes
     FOR EACH ROW
 EXECUTE PROCEDURE logiciel.groupe_deja_valide();
-
-CREATE OR REPLACE FUNCTION logiciel.etudiant_est_dans_groupe()
-    RETURNS TRIGGER AS
-$$
-DECLARE
-    _id_etudiant INTEGER;
-BEGIN
-    SELECT ig.etudiant
-    FROM logiciel.inscriptions_groupes ig
-    WHERE ig.id_inscription_groupe = OLD.id_inscription_groupe
-    INTO _id_etudiant;
-
-    IF (_id_etudiant IS NULL) THEN
-        RAISE 'Vous n êtes pas inscrit dans ce groupe de ce projet';
-    end if;
-    RETURN NEW;
-end;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_etudiant_est_dans_groupe
-    BEFORE DELETE
-    on logiciel.inscriptions_groupes
-    FOR EACH ROW
-EXECUTE PROCEDURE logiciel.etudiant_est_dans_groupe();
-
 
 -------------------------------------------------------------------------
 --4 Visualiser tous les projets des cours inscrits
@@ -811,6 +780,7 @@ WHERE NOT EXISTS(SELECT ig.groupe
                  WHERE ig.projet = p.num_projet
                    AND ig.etudiant = ic.etudiant
                  ORDER BY p.cours);
+
 
 
 -----------------------------------------------------------------------------
@@ -869,22 +839,31 @@ SELECT logiciel.inserer_projets('projSD', 'projet SD2', '2023-03-01', '2023-04-0
 
 --SELECT logiciel.creer_groupes(3, 2, 2);
 
-SELECT logiciel.creer_groupes(3, 1, 1);
+--SELECT logiciel.creer_groupes(3, 1, 1);
 SELECT logiciel.creer_groupes(3, 1, 2);
 
 --SELECT logiciel.creer_groupes(3, 3, 1);
 
 
-
-
+-- SELECT logiciel.inserer_cours('BINV0000', 'a', 1, 6);
+--
+-- SELECT logiciel.inscrire_etudiant_cours('cd@student.vinci.be', 'BINV0000');
+-- SELECT logiciel.inscrire_etudiant_cours('sf@student.vinci.be', 'BINV0000');
+-- SELECT logiciel.inscrire_etudiant_cours('ic@student.vinci.be', 'BINV0000');
+-- SELECT logiciel.inserer_projets('a', 'a', '2023-09-10', '2023-12-15', 'BINV2040');
+-- SELECT logiciel.creer_groupes(4, 1, 2);
+-- SELECT logiciel.creer_groupes(4, 1, 1);
+-- SELECT logiciel.inscrire_etudiant_groupe(1, 1, 'a');
+-- SELECT logiciel.inscrire_etudiant_groupe(2, 1, 'a');
+-- SELECT logiciel.inscrire_etudiant_groupe(3, 2, 'a');
 
 
 -------------------------------------------------------------------
 -------------------------------User--------------------------------
 -------------------------------------------------------------------
 
-GRANT CREATE ON SCHEMA logiciel TO PUBLIC;
-GRANT ALL ON DATABASE postgres TO PUBLIC;
+--GRANT CREATE ON SCHEMA logiciel TO PUBLIC;
+--GRANT ALL ON DATABASE postgres TO PUBLIC;
 
 /*
 REVOKE CREATE ON SCHEMA logiciel FROM PUBLIC;
@@ -905,13 +884,4 @@ ALTER FUNCTION logiciel.recuperer_mdp_etudiant(_id_etudiant INTEGER) SECURITY DE
 ALTER FUNCTION logiciel.retirer_etudiant(integer, varchar) SECURITY DEFINER SET search_path = public;
 ALTER FUNCTION logiciel.chercher_id_projet(varchar) SECURITY DEFINER SET search_path = public;
 */
-SELECT DISTINCT p.identifiant_projet              as "Identifiant",
-                p.nom                             as "Nom",
-                c.code_cours                      as "Cours",
-                p.nombre_groupe                   as "Nombre de groupe",
-                logiciel.nb_complets(g.id_groupe) as "Nombre de groupe complets",
-                logiciel.nb_valide(g.id_groupe)   as "Nombre de groupe validés"
-FROM logiciel.projets p
-         LEFT OUTER JOIN logiciel.cours c on c.id_cours = p.cours
-         LEFT OUTER JOIN logiciel.groupes g on p.num_projet = g.projet
-group by p.identifiant_projet, p.nom, c.code_cours, p.nombre_groupe, g.id_groupe;
+

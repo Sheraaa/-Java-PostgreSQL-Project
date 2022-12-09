@@ -59,9 +59,35 @@ CREATE TABLE logiciel.inscriptions_groupes
     UNIQUE (etudiant, projet)
 );
 
+
 -------------------------------------------------------------------
-----Application centrale
+-------------------------------User--------------------------------
 -------------------------------------------------------------------
+
+/*REVOKE CREATE ON SCHEMA logiciel FROM PUBLIC;
+REVOKE ALL ON DATABASE postgres FROM PUBLIC;
+
+CREATE USER chehrazadouazzani;
+GRANT CONNECT ON DATABASE database_name TO username;
+GRANT USAGE ON SCHEMA schema_name TO username;
+
+CREATE USER mariammiclauri;
+GRANT CONNECT ON DATABASE postgres TO mariammiclauri;
+GRANT USAGE ON SCHEMA logiciel TO mariammiclauri;
+GRANT SELECT ON logiciel.projets, logiciel.cours, logiciel.etudiants, logiciel.groupes TO mariammiclauri;
+GRANT INSERT ON logiciel.inscriptions_groupes TO mariammiclauri;
+
+
+ALTER FUNCTION logiciel.inscrire_etudiant_groupe(integer, integer, varchar) SECURITY DEFINER SET search_path = public;
+ALTER FUNCTION logiciel.recuperer_mdp_etudiant(_id_etudiant INTEGER) SECURITY DEFINER SET search_path = public;
+ALTER FUNCTION logiciel.retirer_etudiant(integer, varchar) SECURITY DEFINER SET search_path = public;
+ALTER FUNCTION logiciel.chercher_id_projet(varchar) SECURITY DEFINER SET search_path = public;
+*/
+
+
+--------------------------------------------------------------------
+------------------------Application centrale------------------------
+--------------------------------------------------------------------
 
 --1
 CREATE FUNCTION logiciel.inserer_cours(_code_cours char(8), _nom VARCHAR, _bloc INTEGER, _nb_credits INTEGER)
@@ -83,6 +109,7 @@ BEGIN
     INSERT INTO logiciel.etudiants(nom, prenom, mail, pass_word) VALUES (_nom, _prenom, _mail, _mdp);
 end;
 $$ LANGUAGE plpgsql;
+
 ------------------------------------------------------------------------------------
 
 --3

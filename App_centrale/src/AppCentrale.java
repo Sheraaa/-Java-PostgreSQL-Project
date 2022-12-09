@@ -14,8 +14,8 @@ public class AppCentrale {
     private PreparedStatement ps10;
     private PreparedStatement ps11;
     private Connection conn;
-  //  private final String url = "jdbc:postgresql://localhost:5432/logiciel";
-    private static String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani";
+    private final String url = "jdbc:postgresql://localhost:5432/postgres";
+    //private static String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani";
     private static Scanner scanner = new Scanner(System.in);
 
     /**
@@ -30,8 +30,8 @@ public class AppCentrale {
         }
 
         try {
-            conn=DriverManager.getConnection(url,"chehrazadouazzani","SQINPAG0B");
-           // conn = DriverManager.getConnection(url, "postgres", "shera");
+           //conn=DriverManager.getConnection(url,"chehrazadouazzani","SQINPAG0B");
+           conn = DriverManager.getConnection(url, "postgres", "Mariam-16");
         } catch (SQLException e) {
             System.out.println("Impossible de joindre le server !");
             System.exit(1);

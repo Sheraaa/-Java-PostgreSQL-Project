@@ -203,6 +203,7 @@ public class AppCentrale {
         try {
             ps11.setString(1,valeur);
             ResultSet rs = ps11.executeQuery();
+            rs.next();
             ps5.setInt(1, rs.getInt(1));
             System.out.print("Combien de groupe: ");
             int val = Integer.parseInt(scanner.nextLine());
@@ -251,7 +252,7 @@ public class AppCentrale {
      * ps7 = SELECT * FROM logiciel.afficher_projets
      */
     public void afficherProjets() {
-        System.out.println("---------Afficher les projets-------------");
+        System.out.println("-------------------------------Afficher les projets----------------------------------------------------------------------------------------------------------");
         try {
             ResultSet rs = ps7.executeQuery();
             ResultSetMetaData resultSetMetaData = rs.getMetaData();
@@ -260,11 +261,14 @@ public class AppCentrale {
                 System.out.print(resultSetMetaData.getColumnName(i) + "\t\t\t\t");
             }
             System.out.println();
+            System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------------------------");
             while (rs.next()) {
                 System.out.println(rs.getString(1) + "\t\t\t\t" + rs.getString(2) +
-                        "\t\t\t\t" + rs.getString(3) + "\t\t\t\t" + rs.getString(4)
-                        + "\t\t\t\t" + rs.getString(5) + "\t\t\t\t" + rs.getString(6));
+                        "\t\t\t\t" + rs.getString(3) + "\t\t\t\t\t\t" + rs.getString(4)
+                        + "\t\t\t\t\t\t\t" + rs.getString(5) + "\t\t\t\t\t\t\t\t" + rs.getString(6));
             }
+            System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------------------------");
+            System.out.println();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -276,7 +280,7 @@ public class AppCentrale {
      * ps11 = SELECT logiciel.chercher_id_projet(?)
      */
     public void afficherCompositionsGroupePourUnProjet() {
-        System.out.println("---------Afficher composition de groupe d'un projet-------------");
+        System.out.println("-----------------------Afficher composition de groupe d'un projet------------------------");
 
         System.out.print("Entrez l'identifiant de projet: ");
         String identifiantProjet = scanner.nextLine();
@@ -293,13 +297,19 @@ public class AppCentrale {
 
             int idProjet = rs1.getInt(1);
 
+            System.out.println();
+            System.out.println("---------------------------------------------------------------------------------------------");
+
             while (rs.next()) {
                 if (idProjet == rs.getInt(1)) {
-                    System.out.println(rs.getInt(2) + "         " + rs.getString(3)
-                            + "         " + rs.getString(4)
-                            + "         " + rs.getBoolean(5) + "         " + rs.getBoolean(6));
+                    System.out.println(rs.getInt(2) + "            " + rs.getString(3)
+                            + "            " + rs.getString(4)
+                            + "            " + rs.getBoolean(5) + "            " + rs.getBoolean(6));
                 }
             }
+            System.out.println("---------------------------------------------------------------------------------------------");
+            System.out.println();
+
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }

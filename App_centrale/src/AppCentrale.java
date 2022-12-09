@@ -2,7 +2,6 @@ import java.sql.*;
 import java.util.Scanner;
 
 public class AppCentrale {
-    private PreparedStatement psDemo;
     private PreparedStatement ps1;
     private PreparedStatement ps2;
     private PreparedStatement ps3;
@@ -15,7 +14,7 @@ public class AppCentrale {
     private PreparedStatement ps10;
     private PreparedStatement ps11;
     private Connection conn;
-    private final String url = "jdbc:postgresql://localhost:5432/logiciel";
+    private final String url = "jdbc:postgresql://localhost:5432/postgres";
     //private static String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani";
     private static Scanner scanner = new Scanner(System.in);
 
@@ -31,14 +30,13 @@ public class AppCentrale {
         }
 
         try {
-            //conn=DriverManager.getConnection(url,”chehrazadouazzani”,”SQINPAG0B”);
-            conn = DriverManager.getConnection(url, "postgres", "shera");
+           //conn=DriverManager.getConnection(url,"chehrazadouazzani","SQINPAG0B");
+           conn = DriverManager.getConnection(url, "postgres", "Mariam-16");
         } catch (SQLException e) {
             System.out.println("Impossible de joindre le server !");
             System.exit(1);
         }
         prepareStatements();
-        requeteDemo1();
     }
 
     /**
@@ -205,6 +203,7 @@ public class AppCentrale {
         try {
             ps11.setString(1,valeur);
             ResultSet rs = ps11.executeQuery();
+            rs.next();
             ps5.setInt(1, rs.getInt(1));
             System.out.print("Combien de groupe: ");
             int val = Integer.parseInt(scanner.nextLine());
@@ -253,7 +252,7 @@ public class AppCentrale {
      * ps7 = SELECT * FROM logiciel.afficher_projets
      */
     public void afficherProjets() {
-        System.out.println("---------Afficher les projets-------------");
+        System.out.println("-------------------------------Afficher les projets----------------------------------------------------------------------------------------------------------");
         try {
             ResultSet rs = ps7.executeQuery();
             ResultSetMetaData resultSetMetaData = rs.getMetaData();
@@ -262,11 +261,14 @@ public class AppCentrale {
                 System.out.print(resultSetMetaData.getColumnName(i) + "\t\t\t\t");
             }
             System.out.println();
+            System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------------------------");
             while (rs.next()) {
                 System.out.println(rs.getString(1) + "\t\t\t\t" + rs.getString(2) +
-                        "\t\t\t\t" + rs.getString(3) + "\t\t\t\t" + rs.getString(4)
-                        + "\t\t\t\t" + rs.getString(5) + "\t\t\t\t" + rs.getString(6));
+                        "\t\t\t\t" + rs.getString(3) + "\t\t\t\t\t\t" + rs.getString(4)
+                        + "\t\t\t\t\t\t\t" + rs.getString(5) + "\t\t\t\t\t\t\t\t" + rs.getString(6));
             }
+            System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------------------------");
+            System.out.println();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -278,7 +280,7 @@ public class AppCentrale {
      * ps11 = SELECT logiciel.chercher_id_projet(?)
      */
     public void afficherCompositionsGroupePourUnProjet() {
-        System.out.println("---------Afficher composition de groupe d'un projet-------------");
+        System.out.println("-----------------------Afficher composition de groupe d'un projet------------------------");
 
         System.out.print("Entrez l'identifiant de projet: ");
         String identifiantProjet = scanner.nextLine();
@@ -295,13 +297,19 @@ public class AppCentrale {
 
             int idProjet = rs1.getInt(1);
 
+            System.out.println();
+            System.out.println("---------------------------------------------------------------------------------------------");
+
             while (rs.next()) {
                 if (idProjet == rs.getInt(1)) {
-                    System.out.println(rs.getInt(2) + "         " + rs.getString(3)
-                            + "         " + rs.getString(4)
-                            + "         " + rs.getBoolean(5) + "         " + rs.getBoolean(6));
+                    System.out.println(rs.getInt(2) + "            " + rs.getString(3)
+                            + "            " + rs.getString(4)
+                            + "            " + rs.getBoolean(5) + "            " + rs.getBoolean(6));
                 }
             }
+            System.out.println("---------------------------------------------------------------------------------------------");
+            System.out.println();
+
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -355,23 +363,5 @@ public class AppCentrale {
             System.out.println("--------> ECHEC de la validation des groupes ! <------------");
             System.out.println();
         }
-    }
-
-    /**
-     * execute the statements of the demo before creating a student
-     */
-    public void requeteDemo1() {
-        System.out.println("-----------------Scénario de démo-----------------------");
-        try {
-            psDemo = conn.prepareStatement("SELECT logiciel.inserer_cours('BINV2040', 'BD2', 2, 6)");
-            psDemo.executeQuery();
-            psDemo = conn.prepareStatement("SELECT logiciel.inserer_cours('BINV1020', 'APOO', 1, 6)");
-            psDemo.executeQuery();
-            psDemo = conn.prepareStatement("SELECT logiciel.inserer_cours('BINV0000', 'a', 1, 6)");
-            psDemo.executeQuery();
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
-        System.out.println("-------------OK--------------------");
     }
 }

@@ -150,24 +150,6 @@ CREATE TRIGGER trigger_inc_nb_etudiant
     FOR EACH ROW
 EXECUTE PROCEDURE logiciel.incrementer_nb_etudiants();
 
---TRIGGER si groupe est complet
-CREATE FUNCTION logiciel.groupe_est_complet()
-    RETURNS TRIGGER AS
-$$
-BEGIN
-    UPDATE logiciel.groupes g
-    SET complet = TRUE
-    WHERE g.id_groupe = NEW.id_groupe;
-    RETURN NEW;
-end;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_groupe_complet
-    AFTER UPDATE OF nombre_inscrits
-    on logiciel.groupes
-    FOR EACH ROW
-EXECUTE PROCEDURE logiciel.groupe_est_complet();
-
 ------------------------------------------------------------------------------------
 --4
 CREATE FUNCTION logiciel.inserer_projets(_identifiant_projet VARCHAR, _nom VARCHAR, _date_debut DATE, _date_fin DATE,
@@ -270,17 +252,6 @@ BEGIN
     IF (_nb_etudiant_inscrits_actuellement = _nb_etudiant_cours) THEN
         RAISE 'Impossible de créer plus de groupe car c est complet ';
     end if;
-
-    --     SELECT SUM(g.taille_groupe * p.nombre_groupe)
---     FROM logiciel.groupes g,
---          logiciel.projets p
---     WHERE g.projet = NEW.projet
---       AND p.num_projet = g.projet
---     INTO nb_places_groupe;
-
---     IF (_nb_etudiant < _nb_places_groupe) THEN
---         RAISE 'Impossible de créer autant de groupe que d étudiant inscrit ! ';
---     end if;
     RETURN NEW;
 end ;
 $$ LANGUAGE plpgsql;
@@ -290,13 +261,6 @@ CREATE TRIGGER trigger_checker_creation_groupe
     on logiciel.groupes
     FOR EACH ROW
 EXECUTE PROCEDURE logiciel.test_capacite_groupe();
-
--- CREATE TRIGGER trigger_checker_nombre_groupe
---     BEFORE UPDATE OF nombre_groupe
---     on logiciel.projets
---     FOR EACH ROW
--- EXECUTE PROCEDURE logiciel.test_capacite_groupe();
-
 
 CREATE FUNCTION logiciel.creer_un_groupe(_num_projet INTEGER, _taille_groupe INTEGER)
     RETURNS VOID AS
@@ -337,7 +301,6 @@ CREATE TRIGGER trigger_inc_nb_groupe
     on logiciel.groupes
     FOR EACH ROW
 EXECUTE PROCEDURE logiciel.incrementer_nb_groupe();
-
 
 
 --6 Visualiser les cours
@@ -438,6 +401,13 @@ CREATE FUNCTION logiciel.valider_un_groupe(_num_projet INTEGER, _numero_groupe I
     RETURNS BOOLEAN AS
 $$
 BEGIN
+    IF NOT EXISTS(SELECT g.num_groupe
+                  FROM logiciel.groupes g
+                  WHERE g.num_groupe = _numero_groupe
+                    AND g.projet = _num_projet) THEN
+        RAISE 'Numéro de groupe inexistant pour ce projet';
+    end if;
+
     UPDATE logiciel.groupes g
     SET valide = TRUE
     WHERE g.num_groupe = _numero_groupe
@@ -473,20 +443,14 @@ CREATE FUNCTION logiciel.check_valider_groupe()
     RETURNS TRIGGER AS
 $$
 DECLARE
-    taille_gr  INTEGER;
-    nb_inscrit INTEGER;
+    _est_complet BOOLEAN;
 BEGIN
-    SELECT g.taille_groupe
+    SELECT g.complet
     FROM logiciel.groupes g
-    WHERE g.projet = OLD.projet
-    INTO taille_gr;
+    WHERE NEW.id_groupe = g.id_groupe
+    INTO _est_complet;
 
-    SELECT g.nombre_inscrits
-    FROM logiciel.groupes g
-    WHERE g.projet = OLD.projet
-    INTO nb_inscrit;
-
-    IF (taille_gr > nb_inscrit) THEN
+    IF (_est_complet = FALSE) THEN
         RAISE 'Impossible de valider le groupe car il n est pas complet !';
     end if;
     RETURN NEW;
@@ -613,11 +577,32 @@ EXECUTE PROCEDURE logiciel.deja_inscrits();
 CREATE OR REPLACE FUNCTION logiciel.incrementer_nb_inscrits()
     RETURNS TRIGGER AS
 $$
+DECLARE
+    _nb_inscrits   INTEGER;
+    _taille_groupe INTEGER;
 BEGIN
+
     UPDATE logiciel.groupes g
     SET nombre_inscrits = g.nombre_inscrits + 1
     WHERE g.id_groupe = NEW.groupe
       AND g.projet = NEW.projet;
+
+    SELECT g.nombre_inscrits
+    FROM logiciel.groupes g
+    WHERE g.id_groupe = NEW.groupe
+    INTO _nb_inscrits;
+
+    SELECT g.taille_groupe
+    FROM logiciel.groupes g
+    WHERE g.id_groupe = NEW.groupe
+    INTO _taille_groupe;
+
+    IF (_nb_inscrits = _taille_groupe) THEN
+        UPDATE logiciel.groupes g
+        SET complet = TRUE
+        WHERE g.id_groupe = NEW.groupe;
+    end if;
+
     RETURN NEW;
 end;
 $$ LANGUAGE plpgsql;
@@ -628,39 +613,7 @@ CREATE TRIGGER trigger_incrementer_nb_etudiant_dans_groupe
     FOR EACH ROW
 EXECUTE PROCEDURE logiciel.incrementer_nb_inscrits();
 
-CREATE OR REPLACE FUNCTION logiciel.check_groupe_complet()
-    RETURNS TRIGGER AS
-$$
-DECLARE
-    taille_gr  INTEGER;
-    nb_inscrit INTEGER;
-BEGIN
-    SELECT g.taille_groupe
-    FROM logiciel.groupes g
-    WHERE g.id_groupe = NEW.groupe
-    INTO taille_gr;
-
-    SELECT g.nombre_inscrits
-    FROM logiciel.groupes g
-    WHERE g.id_groupe = NEW.groupe
-    INTO nb_inscrit;
-
-    IF (taille_gr = nb_inscrit) THEN
-        UPDATE logiciel.groupes g
-        SET complet = TRUE
-        WHERE g.num_groupe = NEW.groupe;
-    end if;
-    RETURN NEW;
-end ;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_groupe_complet
-    AFTER INSERT
-    on logiciel.inscriptions_groupes
-    FOR EACH ROW
-EXECUTE PROCEDURE logiciel.check_groupe_complet();
-
-
+--------------------------
 CREATE OR REPLACE FUNCTION logiciel.taille_groupe()
     RETURNS TRIGGER AS
 $$
@@ -717,7 +670,8 @@ CREATE OR REPLACE FUNCTION logiciel.decrementer_nb_etudiants()
 $$
 BEGIN
     UPDATE logiciel.groupes g
-    SET nombre_inscrits = nombre_inscrits - 1, complet= FALSE
+    SET nombre_inscrits = nombre_inscrits - 1,
+        complet= FALSE
     WHERE g.id_groupe = OLD.groupe;
     RETURN OLD;
 end;
@@ -760,6 +714,38 @@ CREATE TRIGGER trigger_est_groupe_valide
     FOR EACH ROW
 EXECUTE PROCEDURE logiciel.test_avant_suppression_etudiant_groupe();
 
+CREATE OR REPLACE FUNCTION logiciel.valide_incomplet()
+    RETURNS TRIGGER AS
+$$
+DECLARE
+    nb_inscrits    INTEGER;
+    _taille_groupe INTEGER;
+BEGIN
+    SELECT g.nombre_inscrits
+    FROM logiciel.groupes g
+    WHERE g.id_groupe = NEW.groupe
+    INTO nb_inscrits;
+
+    SELECT g.taille_groupe
+    FROM logiciel.groupes g
+    WHERE g.id_groupe = NEW.groupe
+    INTO _taille_groupe;
+
+    IF (nb_inscrits < _taille_groupe) THEN
+        UPDATE logiciel.groupes g
+        SET complet = FALSE
+        WHERE g.num_groupe = NEW.groupe;
+    END IF;
+    RETURN NEW;
+end ;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_groupe_incomplet
+    AFTER DELETE
+    on logiciel.inscriptions_groupes
+    FOR EACH ROW
+EXECUTE PROCEDURE logiciel.valide_incomplet();
+
 -------------------------------------------------------------------------
 --4 Visualiser tous les projets des cours inscrits
 CREATE OR REPLACE VIEW logiciel.afficher_lesProjets_d_etudiant AS
@@ -794,13 +780,11 @@ WHERE NOT EXISTS(SELECT ig.groupe
                    AND ig.etudiant = ic.etudiant
                  ORDER BY p.cours);
 
-
-
 -----------------------------------------------------------------------------
 -----6 Visualiser toutes les compositions de groupes incomplets d'un projet
 
 CREATE OR REPLACE VIEW logiciel.afficher_composition_groupes_incomplets AS
-SELECT e.id_etudiant,  p.num_projet,
+SELECT p.num_projet,
        g.num_groupe                        as "Num groupe",
        e.nom                               as "Nom",
        e.prenom                            as "Prénom",
@@ -815,7 +799,9 @@ WHERE p.num_projet = g.projet
   AND g.complet = FALSE
   AND e.id_etudiant = ig.etudiant
   AND ig.projet = p.num_projet
-group by  p.num_projet, p.identifiant_projet, g.num_groupe, e.nom, e.prenom, g.taille_groupe, g.nombre_inscrits, e.id_etudiant
+
+group by p.num_projet, p.identifiant_projet, g.num_groupe, e.nom, e.prenom, g.taille_groupe, g.nombre_inscrits,
+         e.id_etudiant
 ORDER BY g.num_groupe;
 ----------------------------------------
 ------------DEMO----------------------------
@@ -836,39 +822,48 @@ SELECT logiciel.creer_groupes(1, 1, 2);
 SELECT logiciel.inscrire_etudiant_groupe(1, 1, 'projSQL');
 SELECT logiciel.inscrire_etudiant_groupe(2, 1, 'projSQL');
 
--- -----------------------------------
--- ----a supprimer-------------------
--- SELECT logiciel.inserer_cours('BINV2140', 'SD2', 2, 3);
--- INSERT INTO logiciel.etudiants(nom, prenom, mail, pass_word)
--- VALUES ('Cambron', 'Isabelle', 'ic@student.vinci.be', '$2a$10$Z1UzzMyxT.V4sOHuJAyan.X3v.zFB4pqVDy5zsftTZwvSR2rpHqKK');
---
--- --SELECT logiciel.inscrire_etudiant_cours('ic@student.vinci.be', 'BINV2040');
---
--- SELECT logiciel.inscrire_etudiant_cours('ic@student.vinci.be', 'BINV2140');
--- SELECT logiciel.inscrire_etudiant_cours('sf@student.vinci.be', 'BINV2140');
--- SELECT logiciel.inscrire_etudiant_cours('cd@student.vinci.be', 'BINV2140');
--- SELECT logiciel.inserer_projets('projSD', 'projet SD2', '2023-03-01', '2023-04-01', 'BINV2140');
---
--- --SELECT logiciel.creer_groupes(3, 2, 2);
---
--- --SELECT logiciel.creer_groupes(3, 1, 1);
--- SELECT logiciel.creer_groupes(3, 1, 2);
 
---SELECT logiciel.creer_groupes(3, 3, 1);
+-- CREATE USER mariammiclauri WITH PASSWORD '123';
+-- GRANT CONNECT ON DATABASE postgres TO mariammiclauri;
+-- GRANT USAGE ON SCHEMA logiciel TO mariammiclauri;
 
+GRANT SELECT ON logiciel.projets, logiciel.cours, logiciel.etudiants, logiciel.groupes,
+    logiciel.afficher_composition_groupes_incomplets,logiciel.afficher_lesProjets_d_etudiant,
+    logiciel.afficher_mes_cours, logiciel.afficher_projets_pas_encore_de_groupe, logiciel.chercher_id_projet TO mariammiclauri;
+GRANT UPDATE ON logiciel.groupes, logiciel.projets TO mariammiclauri;
+GRANT INSERT ON logiciel.inscriptions_groupes TO mariammiclauri;
+GRANT DELETE ON logiciel.inscriptions_groupes TO mariammiclauri;
 
--- SELECT logiciel.inserer_cours('BINV0000', 'a', 1, 6);
 --
--- SELECT logiciel.inscrire_etudiant_cours('cd@student.vinci.be', 'BINV0000');
--- SELECT logiciel.inscrire_etudiant_cours('sf@student.vinci.be', 'BINV0000');
--- SELECT logiciel.inscrire_etudiant_cours('ic@student.vinci.be', 'BINV0000');
--- SELECT logiciel.inserer_projets('a', 'a', '2023-09-10', '2023-12-15', 'BINV2040');
--- SELECT logiciel.creer_groupes(4, 1, 2);
--- SELECT logiciel.creer_groupes(4, 1, 1);
--- SELECT logiciel.inscrire_etudiant_groupe(1, 1, 'a');
--- SELECT logiciel.inscrire_etudiant_groupe(2, 1, 'a');
--- SELECT logiciel.inscrire_etudiant_groupe(3, 2, 'a');
-
+-- REASSIGN OWNED BY mariammiclauri TO postgres;
+-- DROP OWNED BY mariammiclauri;
+-- DROP USER IF EXISTS mariammiclauri;
+--
+-- CREATE USER mariammiclauri WITH PASSWORD '123';
+-- GRANT CONNECT ON DATABASE postgres TO mariammiclauri;
+-- GRANT USAGE ON SCHEMA logiciel TO mariammiclauri;
+--
+-- REASSIGN OWNED BY chehrazadouazzani TO postgres;
+-- DROP OWNED BY chehrazadouazzani;
+-- DROP USER IF EXISTS chehrazadouazzani;
+--
+-- CREATE USER chehrazadouazzani WITH PASSWORD '123';
+-- GRANT CONNECT ON DATABASE postgres TO chehrazadouazzani;
+-- GRANT USAGE ON SCHEMA logiciel TO chehrazadouazzani;
+--
+-- ------------------------------
+--
+-- GRANT SELECT ON  TABLE logiciel.projets, logiciel.cours, logiciel.etudiants, logiciel.groupes, logiciel.inscriptions_groupes, logiciel.inscriptions_cours  TO  chehrazadouazzani;
+-- GRANT INSERT ON logiciel.inscriptions_cours, logiciel.etudiants, logiciel.cours, logiciel.projets, logiciel.groupes TO chehrazadouazzani;
+-- GRANT UPDATE ON TABLE logiciel.groupes, logiciel.cours   TO chehrazadouazzani;
+--
+-- GRANT SELECT ON logiciel.projets, logiciel.cours, logiciel.etudiants, logiciel.groupes TO mariammiclauri;
+-- GRANT INSERT ON logiciel.inscriptions_groupes TO mariammiclauri;
+-- GRANT DELETE ON logiciel.inscriptions_groupes TO mariammiclauri;/
+--
+--
+-- GRANT CREATE ON SCHEMA logiciel TO PUBLIC;
+-- GRANT ALL ON DATABASE postgres TO PUBLIC;
 
 -------------------------------------------------------------------
 -------------------------------Droits--------------------------------
@@ -890,7 +885,6 @@ SELECT logiciel.inscrire_etudiant_groupe(2, 1, 'projSQL');
 --GRANT UPDATE ON TABLE logiciel.TABLE   TO chehrazadouazzani;
 
 
-
 --GRANT CREATE ON SCHEMA logiciel TO PUBLIC;
 --GRANT ALL ON DATABASE postgres TO PUBLIC;
 
@@ -901,11 +895,16 @@ REVOKE ALL ON DATABASE postgres FROM PUBLIC;
 DROP USER IF EXISTS mariammiclauri, chehrazadouazzani;
 GRANT CONNECT ON DATABASE postgres TO chehrazadouazzani;
 GRANT USAGE ON SCHEMA logiciel TO chehrazadouazzani;
+GRANT SELECT ON TABLE logiciel.projets, logiciel.cours, logiciel.etudiants, logiciel.groupes TO  chehrazadouazzani;
+
+GRANT INSERT ON logiciel.cours, logiciel.etudiants, logiciel.inscriptions_cours,logiciel.projets,logiciels.groupes TO chehrazadouazzani;
+
 
 GRANT CONNECT ON DATABASE postgres TO mariammiclauri;
 GRANT USAGE ON SCHEMA logiciel TO mariammiclauri;
 GRANT SELECT ON logiciel.projets, logiciel.cours, logiciel.etudiants, logiciel.groupes TO mariammiclauri;
 GRANT INSERT ON logiciel.inscriptions_groupes TO mariammiclauri;
+GRANT DELETE ON logiciel.inscriptions_groupes TO mariammiclauri;
 
 
 ALTER FUNCTION logiciel.inscrire_etudiant_groupe(integer, integer, varchar) SECURITY DEFINER SET search_path = public;

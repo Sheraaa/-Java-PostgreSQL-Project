@@ -14,9 +14,10 @@ public class AppCentrale {
     private PreparedStatement ps10;
     private PreparedStatement ps11;
     private Connection conn;
-    private final String url = "jdbc:postgresql://localhost:5432/logiciel"; // <---- LOGIN SHERA
-   // private final String url = "jdbc:postgresql://localhost:5432/postgres";  <---- LOGIN MARIAM
-    //private static String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani";
+   // private final String url = "jdbc:postgresql://localhost:5432/logiciel";
+    // private final String url = "jdbc:postgresql://localhost:5432/postgres";
+  //  private static String url="jdbc:postgresql://172.24.2.6/dbchehrazadouazzani";
+    private static String url="jdbc:postgresql://172.24.2.6:5432/dbchehrazadouazzani";
     private static Scanner scanner = new Scanner(System.in);
 
     /**
@@ -31,8 +32,8 @@ public class AppCentrale {
         }
 
         try {
-            //conn=DriverManager.getConnection(url,"chehrazadouazzani","SQINPAG0B");
-            conn = DriverManager.getConnection(url, "postgres", "shera");
+            conn=DriverManager.getConnection(url,"chehrazadouazzani","SQINPAG0B");
+         //   conn = DriverManager.getConnection(url, "postgres", "shera");
         } catch (SQLException e) {
             System.out.println("Impossible de joindre le server !");
             System.exit(1);
@@ -381,10 +382,10 @@ public class AppCentrale {
     public void validerUnGroupe() {
         System.out.println("---------Valider un groupe d'un projet -------------");
 
-        System.out.print("Entrez le numéro du groupe: ");
-        int idGroupe = Integer.parseInt(scanner.nextLine());
         System.out.print("Entrez l'identifiant du projet: ");
         String identifiantProjet = scanner.nextLine();
+        System.out.print("Entrez le numéro du groupe: ");
+        int idGroupe = Integer.parseInt(scanner.nextLine());
 
         try {
             ps11.setString(1, identifiantProjet);
@@ -395,9 +396,12 @@ public class AppCentrale {
 
             ps9.setInt(1, idProjet);
             ps9.setInt(2, idGroupe);
-            ps9.executeQuery();
-            System.out.println("--------> Validation du groupe REUSSI ! <------------");
-            System.out.println();
+            ResultSet rs = ps9.executeQuery();
+            rs.next();
+            if (rs.getBoolean(1)) {
+                System.out.println("--------> Validation du groupe REUSSI ! <------------");
+                System.out.println();
+            }
 
         } catch (SQLException e) {
             System.out.println(e.getMessage());

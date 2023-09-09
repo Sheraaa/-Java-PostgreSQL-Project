@@ -1,6 +1,7 @@
-# -Java-PostgreSQL-Project
+# Java-PostgreSQL-Project
 The "Java-PostgreSQL Academic Collaboration Platform" is an integrated web-based solution that brings together the power of Java programming and PostgreSQL database management to facilitate seamless collaboration between educators and students within an academic environment.
-This project was a collaborative effort completed by teams of two students.
+
+This project was a collaborative effort completed by teams of two students: Mariam Miclauri and myself.
 
 ## Table of Contents
 
@@ -44,3 +45,14 @@ To get started with the Java-PostgreSQL Academic Collaboration Platform, follow 
 
 - Java
 - PostgreSQL
+
+## Special Thanks
+
+We extend our sincere thanks to the following professors for their valuable support and contributions to our project:
+
+- **Professor Christophe Damas**: We appreciate their expertise in Java and SQL, as well as their continuous mentorship,  which played a significant role in shaping the direction of our project.
+
+- **Professor Stéphanie Ferneeuw**: Their insightful feedback and assistance with the queries significantly improved the quality of our project.
+
+We deeply value their contributions and dedication to our academic journey and project's success.
+

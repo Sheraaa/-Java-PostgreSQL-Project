@@ -50,9 +50,9 @@ To get started with the Java-PostgreSQL Academic Collaboration Platform, follow 
 
 We extend our sincere thanks to the following professors for their valuable support and contributions to our project:
 
-- **Professor Christophe Damas**: We appreciate their expertise in Java and SQL, as well as their continuous mentorship,  which played a significant role in shaping the direction of our project.
+- **Professor Christophe Damas**: We appreciate his expertise in Java and PostgreSQL, as well as his continuous mentorship,  which played a significant role in shaping the direction of our project.
 
-- **Professor Stéphanie Ferneeuw**: Their insightful feedback and assistance with the queries significantly improved the quality of our project.
+- **Professor Stéphanie Ferneeuw**: her insightful feedback and assistance with the queries significantly improved the quality of our project.
 
 We deeply value their contributions and dedication to our academic journey and project's success.
 
